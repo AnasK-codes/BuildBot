@@ -9,10 +9,13 @@ import { AppDefinition } from '../src/types/metadata.types';
 
 // Mock dependencies
 jest.mock('../src/core/ai/refinement/context-aggregator');
-jest.mock('../src/core/ai/schema-generator', () => ({
-  SchemaGenerator: jest.fn().mockImplementation(() => ({
-    generateJSON: jest.fn()
-  }))
+jest.mock('../src/core/ai/providers/provider-factory', () => ({
+  ProviderFactory: {
+    getProvider: jest.fn().mockReturnValue({
+      refineSchema: jest.fn(),
+      generateRepair: jest.fn()
+    })
+  }
 }));
 jest.mock('../src/core/ai/repair-loop', () => ({
   ValidationRepairLoop: jest.fn().mockImplementation(() => ({
@@ -24,7 +27,14 @@ jest.mock('../src/lib/prisma', () => ({
   default: {
     appDefinition: {
       update: jest.fn().mockResolvedValue({})
-    }
+    },
+    appVersionHistory: {
+      create: jest.fn().mockResolvedValue({})
+    },
+    $transaction: jest.fn().mockImplementation(cb => cb({
+      appDefinition: { update: jest.fn().mockResolvedValue({}) },
+      appVersionHistory: { create: jest.fn().mockResolvedValue({}) }
+    }))
   }
 }));
 jest.mock('../src/core/ai/data-seeding-service', () => ({

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, Schema } from '@google/generative-ai';
 import { AIProvider } from './ai-provider';
+import { sanitizeJsonResponse } from '../utils/json-sanitizer';
 import { createModuleLogger } from '@/lib/logger';
 
 const log = createModuleLogger('gemini-provider');
@@ -32,7 +33,7 @@ export class GeminiProvider implements AIProvider {
         throw new Error('No content returned from Gemini');
       }
 
-      return content;
+      return sanitizeJsonResponse(content);
     } catch (error) {
       log.error({ err: error }, 'Gemini generation failed');
       throw new Error(`Gemini Provider failed: ${error instanceof Error ? error.message : String(error)}`);

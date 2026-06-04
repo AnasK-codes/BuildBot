@@ -8,6 +8,7 @@
 import { ValidationEngine } from '../validation/validation-engine';
 import { AIProvider } from './providers/ai-provider';
 import { PromptBuilder } from './prompt-builder';
+import { sanitizeJsonResponse } from './utils/json-sanitizer';
 import { AppDefinition, ValidationReport } from '@/types/metadata.types';
 import { createModuleLogger } from '@/lib/logger';
 
@@ -46,24 +47,24 @@ export class ValidationRepairLoop {
       } else {
         jsonOutput = await this.provider.generateRepair(systemPrompt, currentUserPrompt);
       }
-      lastJson = jsonOutput;
+      lastJson = sanitizeJsonResponse(jsonOutput);
       
-      const validationReport = await this.validationEngine.validateAppDefinition(jsonOutput);
+      const validationReport = await this.validationEngine.validateAppDefinition(lastJson);
       lastReport = validationReport;
 
       if (validationReport.valid) {
         log.info('Validation successful.');
         return {
-          json: jsonOutput,
+          json: lastJson,
           report: validationReport,
-          appDefinition: JSON.parse(jsonOutput) as AppDefinition,
+          appDefinition: JSON.parse(lastJson) as AppDefinition,
         };
       }
 
       log.warn({ errors: validationReport.errors }, `Validation failed on attempt ${currentAttempt}`);
 
       if (currentAttempt < maxAttempts) {
-        currentUserPrompt = PromptBuilder.buildRepairPrompt(jsonOutput, validationReport.errors);
+        currentUserPrompt = PromptBuilder.buildRepairPrompt(lastJson, validationReport.errors);
       }
 
       currentAttempt++;

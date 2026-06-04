@@ -20,9 +20,28 @@ jest.mock('../src/core/metadata/app-service');
 jest.mock('../src/lib/prisma', () => ({
   __esModule: true,
   default: {
+    app: {
+      create: jest.fn().mockImplementation((data) => Promise.resolve({ id: 'app_123', ...data.data })),
+      findUnique: jest.fn()
+    },
     appDefinition: {
       update: jest.fn().mockResolvedValue({})
-    }
+    },
+    appVersionHistory: {
+      create: jest.fn().mockImplementation((data) => Promise.resolve({ id: 'hist_123', ...data.data }))
+    },
+    $transaction: jest.fn().mockImplementation((cb) => cb({
+      app: {
+        create: jest.fn().mockImplementation((data) => Promise.resolve({ id: 'app_123', ...data.data })),
+        findUnique: jest.fn()
+      },
+      appVersionHistory: {
+        create: jest.fn().mockImplementation((data) => Promise.resolve({ id: 'hist_123', ...data.data }))
+      },
+      appDefinition: {
+        update: jest.fn().mockImplementation((data) => Promise.resolve({ id: 'app_123', ...data.data }))
+      }
+    }))
   }
 }));
 

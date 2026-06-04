@@ -39,6 +39,34 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
+    
+  // AI Integration
+  AI_PROVIDER: z.enum(['openai', 'groq', 'gemini']).default('openai'),
+  AI_FALLBACK_PROVIDER: z.enum(['openai', 'groq', 'gemini']).optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  GROQ_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
+})
+.superRefine((data, ctx) => {
+  const checkKey = (provider: string, key?: string, envName?: string) => {
+    if (!key) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [envName!],
+        message: `${envName} is required when ${provider} is selected as an AI provider`,
+      });
+    }
+  };
+
+  if (data.AI_PROVIDER === 'openai' || data.AI_FALLBACK_PROVIDER === 'openai') {
+    checkKey('openai', data.OPENAI_API_KEY, 'OPENAI_API_KEY');
+  }
+  if (data.AI_PROVIDER === 'groq' || data.AI_FALLBACK_PROVIDER === 'groq') {
+    checkKey('groq', data.GROQ_API_KEY, 'GROQ_API_KEY');
+  }
+  if (data.AI_PROVIDER === 'gemini' || data.AI_FALLBACK_PROVIDER === 'gemini') {
+    checkKey('gemini', data.GEMINI_API_KEY, 'GEMINI_API_KEY');
+  }
 });
 
 // --- Validation & Export ---

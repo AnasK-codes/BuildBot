@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { AIProvider } from './ai-provider';
+import { sanitizeJsonResponse } from '../utils/json-sanitizer';
 import { createModuleLogger } from '@/lib/logger';
 
 const log = createModuleLogger('openai-provider');
@@ -31,7 +32,7 @@ export class OpenAIProvider implements AIProvider {
         throw new Error('No content returned from OpenAI');
       }
 
-      return content;
+      return sanitizeJsonResponse(content);
     } catch (error) {
       log.error({ err: error }, 'OpenAI generation failed');
       throw new Error(`OpenAI Provider failed: ${error instanceof Error ? error.message : String(error)}`);

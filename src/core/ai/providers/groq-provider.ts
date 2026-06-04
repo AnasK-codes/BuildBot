@@ -1,5 +1,6 @@
 import Groq from 'groq-sdk';
 import { AIProvider } from './ai-provider';
+import { sanitizeJsonResponse } from '../utils/json-sanitizer';
 import { createModuleLogger } from '@/lib/logger';
 
 const log = createModuleLogger('groq-provider');
@@ -31,7 +32,7 @@ export class GroqProvider implements AIProvider {
         throw new Error('No content returned from Groq');
       }
 
-      return content;
+      return sanitizeJsonResponse(content);
     } catch (error) {
       log.error({ err: error }, 'Groq generation failed');
       throw new Error(`Groq Provider failed: ${error instanceof Error ? error.message : String(error)}`);

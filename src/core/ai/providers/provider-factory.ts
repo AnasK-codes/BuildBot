@@ -2,6 +2,8 @@ import { AIProvider } from './ai-provider';
 import { OpenAIProvider } from './openai-provider';
 import { GroqProvider } from './groq-provider';
 import { GeminiProvider } from './gemini-provider';
+import { validateProviderConfiguration } from './provider-health';
+import { env } from '@/config/env';
 import { createModuleLogger } from '@/lib/logger';
 
 const log = createModuleLogger('provider-factory');
@@ -17,11 +19,23 @@ class FallbackProviderWrapper implements AIProvider {
     primaryFn: () => Promise<string>,
     fallbackFn: () => Promise<string>
   ): Promise<string> {
+    const startTime = Date.now();
     try {
-      return await primaryFn();
+      const result = await primaryFn();
+      log.info({ operation, latencyMs: Date.now() - startTime }, 'Primary provider succeeded');
+      return result;
     } catch (error) {
-      log.warn({ err: error, operation }, `Primary provider failed. Switching to fallback provider...`);
-      return await fallbackFn();
+      log.warn({ err: error, operation, latencyMs: Date.now() - startTime }, `Primary provider failed. Switching to fallback provider...`);
+      
+      const fallbackStartTime = Date.now();
+      try {
+        const fallbackResult = await fallbackFn();
+        log.info({ operation, fallbackLatencyMs: Date.now() - fallbackStartTime }, 'Fallback provider succeeded');
+        return fallbackResult;
+      } catch (fallbackError) {
+        log.error({ err: fallbackError, operation, fallbackLatencyMs: Date.now() - fallbackStartTime }, 'Fallback provider also failed.');
+        throw fallbackError;
+      }
     }
   }
 
@@ -59,6 +73,8 @@ class FallbackProviderWrapper implements AIProvider {
 }
 
 export class ProviderFactory {
+  private static instance: AIProvider | null = null;
+
   private static createProvider(providerName: string): AIProvider {
     switch (providerName.toLowerCase()) {
       case 'openai':
@@ -74,18 +90,31 @@ export class ProviderFactory {
   }
 
   public static getProvider(): AIProvider {
-    const primaryName = process.env.AI_PROVIDER || 'openai';
-    const fallbackName = process.env.AI_FALLBACK_PROVIDER;
+    if (this.instance) {
+      return this.instance;
+    }
+
+    validateProviderConfiguration();
+
+    const primaryName = env.AI_PROVIDER;
+    const fallbackName = env.AI_FALLBACK_PROVIDER;
 
     const primaryProvider = this.createProvider(primaryName);
 
     if (fallbackName) {
       log.info({ primary: primaryName, fallback: fallbackName }, 'Initializing AI Provider with Fallback');
       const fallbackProvider = this.createProvider(fallbackName);
-      return new FallbackProviderWrapper(primaryProvider, fallbackProvider);
+      this.instance = new FallbackProviderWrapper(primaryProvider, fallbackProvider);
+      return this.instance;
     }
 
     log.info({ provider: primaryName }, 'Initializing AI Provider');
-    return primaryProvider;
+    this.instance = primaryProvider;
+    return this.instance;
+  }
+  
+  // For testing purposes
+  public static reset() {
+    this.instance = null;
   }
 }

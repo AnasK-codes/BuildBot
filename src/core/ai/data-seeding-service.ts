@@ -11,6 +11,7 @@ import { OperationExecutor } from '../runtime/operation-executor';
 import { createModuleLogger } from '@/lib/logger';
 import { ProviderFactory } from './providers/provider-factory';
 import { SeedTemplates } from './seed-templates';
+import { sanitizeJsonResponse } from './utils/json-sanitizer';
 import { RuntimeContext } from '@/types/runtime.types';
 
 const log = createModuleLogger('data-seeding');
@@ -132,9 +133,7 @@ Instructions:
 3. Return ONLY a valid JSON array like: [{"field1": "value", "field2": 123}]`;
 
     const resultStr = await this.provider.generateSeedData(systemPrompt, 'Generate the records now.');
-    
-    // Attempt to parse. Groq/Gemini might wrap in markdown even in JSON mode, so strip it just in case.
-    const cleanStr = resultStr.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+    const cleanStr = sanitizeJsonResponse(resultStr);
     const records = JSON.parse(cleanStr);
     
     if (!Array.isArray(records)) {
