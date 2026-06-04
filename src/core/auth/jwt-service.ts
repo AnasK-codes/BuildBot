@@ -22,8 +22,8 @@ export function generateAccessToken(payload: {
   sub: string;
   email: string;
 }): string {
-  return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN,
+  return jwt.sign(payload, env.JWT_SECRET as string, {
+    expiresIn: env.JWT_EXPIRES_IN as any,
   });
 }
 
@@ -66,8 +66,8 @@ export function generateRefreshToken(payload: {
   sub: string;
   email: string;
 }): string {
-  return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+  return jwt.sign(payload, env.JWT_REFRESH_SECRET as string, {
+    expiresIn: env.JWT_REFRESH_EXPIRES_IN as any,
   });
 }
 

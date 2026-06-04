@@ -19,7 +19,7 @@ const MAX_PAYLOAD_APP_DEF = 1 * 1024 * 1024; // 1MB limit for schema definitions
 const MAX_PAYLOAD_RUNTIME = 100 * 1024;      // 100KB limit for runtime records
 
 export function middleware(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') || req.ip || '127.0.0.1';
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
   const path = req.nextUrl.pathname;
 
   // 1. Request Size Limiting

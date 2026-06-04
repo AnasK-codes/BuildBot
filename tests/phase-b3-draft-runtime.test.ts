@@ -19,7 +19,11 @@ jest.mock('../src/core/metadata/app-service');
 
 jest.mock('../src/lib/prisma', () => ({
   __esModule: true,
-  default: {}
+  default: {
+    appDefinition: {
+      update: jest.fn().mockResolvedValue({})
+    }
+  }
 }));
 
 describe('Phase B3 - Draft Lifecycle & Runtime Integration', () => {
@@ -70,6 +74,7 @@ describe('Phase B3 - Draft Lifecycle & Runtime Integration', () => {
         version: 1,
         status: "DRAFT",
         rawDefinition: mockJson,
+        uiDefinition: null,
         validationReport: null,
         deprecatedAt: null,
         deprecationReason: null,

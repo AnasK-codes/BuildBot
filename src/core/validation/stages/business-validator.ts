@@ -122,8 +122,10 @@ export class BusinessValidator implements ValidationStage {
             field: field.name,
           });
         } else {
-          const target = field.relation.entity;
-          if (!entityNames.has(target.toLowerCase())) {
+          // entityId stores the target entity's id; get the entity name to cross-check
+          const target = field.relation.entityId;
+          const targetEntity = app.entities.find(e => e.id === target);
+          if (!targetEntity) {
             context.issues.push({
               stage: this.name,
               severity: 'error',

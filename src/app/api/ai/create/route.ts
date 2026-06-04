@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const result = createSchema.safeParse(body);
     if (!result.success) {
-      throw new ValidationError('Invalid request body', { errors: result.error.errors });
+      throw new ValidationError('Invalid request body', { errors: result.error.issues });
     }
     
     // Generate Domain Metadata via AI pipeline

@@ -28,8 +28,8 @@ export class SchemaAuditService {
           breaking: report.breakingChanges.length,
         }),
         migrationPlan: report.migrationRequirements.length > 0 
-          ? JSON.stringify(report.migrationRequirements) 
-          : null,
+          ? JSON.stringify(report.migrationRequirements) as any
+          : undefined,
       },
     });
   }

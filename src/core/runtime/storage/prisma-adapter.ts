@@ -22,7 +22,7 @@ export class PrismaStorageAdapter implements StorageAdapter {
         appId,
         userId: context.user.userId,
         entitySlug: context.entity.name.toLowerCase(),
-        data: data,
+        data: data as any,
       },
     });
 
@@ -83,7 +83,7 @@ export class PrismaStorageAdapter implements StorageAdapter {
 
     const record = await prisma.runtimeRecord.update({
       where: { id },
-      data: { data: mergedData },
+      data: { data: mergedData as any },
     });
 
     return this.mapToRuntimeRecord(record);
@@ -98,7 +98,7 @@ export class PrismaStorageAdapter implements StorageAdapter {
     // Full replacement for PUT behavior
     const record = await prisma.runtimeRecord.update({
       where: { id },
-      data: { data },
+      data: { data: data as any },
     });
 
     return this.mapToRuntimeRecord(record);

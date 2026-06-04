@@ -58,7 +58,7 @@ export class DataSeedingService {
 
         // Synthesize context for the OperationExecutor
         const ctx: RuntimeContext = {
-          user: { userId, roles: ['user'] },
+          user: { userId, email: 'seed@buildbot.internal' },
           app: appDef,
           entity: entity,
           operation: 'CREATE',

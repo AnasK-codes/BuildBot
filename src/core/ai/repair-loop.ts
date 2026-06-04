@@ -51,7 +51,7 @@ export class ValidationRepairLoop {
         };
       }
 
-      log.warn(`Validation failed on attempt ${currentAttempt}`, { errors: validationReport.errors });
+      log.warn({ errors: validationReport.errors }, `Validation failed on attempt ${currentAttempt}`);
 
       if (currentAttempt < maxAttempts) {
         currentUserPrompt = PromptBuilder.buildRepairPrompt(jsonOutput, validationReport.errors);
