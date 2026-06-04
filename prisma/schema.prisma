@@ -52,6 +52,7 @@ model AppDefinition {
   version          Int      @default(1)
   status           String   // "ACTIVE" | "DRAFT" | "DEPRECATED" | "INVALID"
   rawDefinition    Json     // The original JSON string
+  uiDefinition     Json?    // The generated UI definition
   validationReport Json?    // Any warnings or errors during parsing
   deprecatedAt     DateTime?
   deprecationReason String?

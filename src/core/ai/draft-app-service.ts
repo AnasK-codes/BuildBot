@@ -5,6 +5,9 @@
 import { AppDefinitionService } from '../metadata/app-service';
 import { PersistedApp, AppDefinition, EntityDefinition, RelationshipDefinition } from '@/types/metadata.types';
 import { ArchetypeType } from './archetypes/archetype.types';
+import { UIGenerator } from '../ui/ui-generator';
+import { UIValidator } from '../ui/ui-validator';
+import prisma from '@/lib/prisma';
 
 export interface AppSummaryResponse {
   appId: string;
@@ -40,6 +43,16 @@ export class DraftAppService {
     } catch {
       parsedDef = JSON.parse(appDefinitionJson) as AppDefinition;
     }
+
+    // Generate and validate UI
+    const uiDefinition = UIGenerator.generate(parsedDef);
+    UIValidator.validate(uiDefinition, parsedDef);
+
+    // Persist UI definition
+    await prisma.appDefinition.update({
+      where: { id: app.id },
+      data: { uiDefinition: uiDefinition as any }
+    });
 
     const entities = parsedDef.entities || [];
     const entityNames = entities.map(e => e.name);

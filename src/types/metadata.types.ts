@@ -119,6 +119,7 @@ export interface PersistedApp {
   version: number;
   status: AppStatus;
   rawDefinition: unknown;
+  uiDefinition: unknown | null;
   validationReport: ValidationReport | null;
   deprecatedAt: Date | null;
   deprecationReason: string | null;
