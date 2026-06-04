@@ -10,6 +10,7 @@ import { runtimeValidator } from '../validation/stages/runtime-validator';
 import { StorageAdapter } from './storage/storage-adapter';
 import { prismaStorageAdapter } from './storage/prisma-adapter';
 import { NotFoundError, ValidationError } from '@/core/errors';
+import { CompatibilityLayer } from './compatibility-layer';
 
 export class OperationExecutor {
   constructor(private storage: StorageAdapter = prismaStorageAdapter) {}
@@ -34,7 +35,8 @@ export class OperationExecutor {
       throw new NotFoundError(context.entity.name, id);
     }
     
-    return { data: record };
+    const compatibleRecord = CompatibilityLayer.applyReadCompatibility(context.entity, record);
+    return { data: compatibleRecord };
   }
 
   public async list(context: RuntimeContext, query: QueryOptions): Promise<RuntimeResponse<RuntimeRecord[]>> {
@@ -50,8 +52,10 @@ export class OperationExecutor {
 
     const nextCursor = hasMore ? records[records.length - 1].id : undefined;
 
+    const compatibleRecords = records.map(r => CompatibilityLayer.applyReadCompatibility(context.entity, r));
+
     return {
-      data: records,
+      data: compatibleRecords,
       meta: {
         pagination: {
           hasMore,

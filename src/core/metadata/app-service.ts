@@ -43,16 +43,23 @@ export class AppDefinitionService {
 
   /**
    * Update an existing app definition.
+   * By default, it creates a draft or applies safe changes.
+   * If there are breaking changes, forcePublishBreaking must be true.
    */
-  public async updateAppDefinition(userId: string, appId: string, rawJson: string): Promise<PersistedApp> {
-    log.info({ userId, appId }, 'Updating app definition');
+  public async updateAppDefinition(
+    userId: string, 
+    appId: string, 
+    rawJson: string, 
+    forcePublishBreaking = false
+  ): Promise<PersistedApp> {
+    log.info({ userId, appId, forcePublishBreaking }, 'Updating app definition');
     
     // Verify ownership
     await this.assertOwnership(userId, appId);
 
-    // Process and persist
+    // Process and persist (Evolution Engine will reject if breaking & not forced)
     const result = await metadataEngine.processDefinition(rawJson);
-    await metadataEngine.persist(appId, userId, result, rawJson);
+    await metadataEngine.persist(appId, userId, result, rawJson, forcePublishBreaking);
 
     return this.getAppDefinition(userId, appId);
   }

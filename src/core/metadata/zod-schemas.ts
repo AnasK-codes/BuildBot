@@ -21,13 +21,14 @@ export const FieldValidationsSchema = z
 
 export const RelationshipDefinitionSchema = z
   .object({
-    entity: z.string().describe('Target entity name (PascalCase)'),
+    entityId: z.string().describe('Target entity stable ID'),
     type: z.enum(['belongsTo', 'hasMany', 'hasOne']),
   })
   .strict();
 
 export const FieldDefinitionSchema = z
   .object({
+    id: z.string().regex(/^fld_[a-zA-Z0-9_]+$/, 'Field ID must start with fld_'),
     name: z
       .string()
       .min(1)
@@ -46,6 +47,7 @@ export const FieldDefinitionSchema = z
 
 export const EntityDefinitionSchema = z
   .object({
+    id: z.string().regex(/^ent_[a-zA-Z0-9_]+$/, 'Entity ID must start with ent_'),
     name: z
       .string()
       .min(1)
@@ -59,6 +61,7 @@ export const EntityDefinitionSchema = z
 
 export const AppDefinitionSchema = z
   .object({
+    id: z.string().optional(),
     appName: z
       .string()
       .min(1)

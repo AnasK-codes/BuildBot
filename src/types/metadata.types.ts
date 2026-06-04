@@ -24,7 +24,7 @@ export type FieldType =
 export type RelationType = 'belongsTo' | 'hasMany' | 'hasOne';
 
 export interface RelationshipDefinition {
-  entity: string; // Target entity name (PascalCase)
+  entityId: string; // Target entity stable ID (was name)
   type: RelationType;
 }
 
@@ -37,6 +37,7 @@ export interface FieldValidations {
 }
 
 export interface FieldDefinition {
+  id: string; // Stable ID
   name: string;
   type: FieldType;
   required?: boolean;
@@ -51,6 +52,7 @@ export interface FieldDefinition {
 // --- Entity & App Types ---
 
 export interface EntityDefinition {
+  id: string; // Stable ID
   name: string;
   fields: FieldDefinition[];
   timestamps?: boolean;
@@ -58,6 +60,7 @@ export interface EntityDefinition {
 }
 
 export interface AppDefinition {
+  id?: string; // Set after creation
   appName: string;
   description?: string;
   entities: EntityDefinition[];
@@ -107,7 +110,7 @@ export interface MetadataValidationResult {
 
 // --- Internal Engine Types ---
 
-export type AppStatus = 'active' | 'draft' | 'invalid';
+export type AppStatus = 'ACTIVE' | 'DRAFT' | 'DEPRECATED' | 'INVALID';
 
 export interface PersistedApp {
   id: string;
@@ -117,6 +120,8 @@ export interface PersistedApp {
   status: AppStatus;
   rawDefinition: unknown;
   validationReport: ValidationReport | null;
+  deprecatedAt: Date | null;
+  deprecationReason: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
