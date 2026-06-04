@@ -1,0 +1,106 @@
+// ============================================================
+// BuildBot — Prisma Schema
+// ============================================================
+// Phase 2: Adding AppDefinition, EntityDefinition, and FieldDefinition.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  
+  // Relations
+  refreshTokens  RefreshToken[]
+  appDefinitions AppDefinition[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+// --- Metadata Models (Phase 2) ---
+
+model AppDefinition {
+  id               String   @id @default(cuid())
+  userId           String
+  appName          String
+  version          Int      @default(1)
+  status           String   // "active" | "draft" | "invalid"
+  rawDefinition    Json     // The original JSON string
+  validationReport Json?    // Any warnings or errors during parsing
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entities         EntityDefinition[]
+
+  @@index([userId])
+  @@map("app_definitions")
+}
+
+model EntityDefinition {
+  id         String   @id @default(cuid())
+  appId      String
+  name       String   // e.g. "Customer"
+  slug       String   // e.g. "customer"
+  softDelete Boolean  @default(true)
+  timestamps Boolean  @default(true)
+  config     Json?    // additional entity-level settings
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  app        AppDefinition     @relation(fields: [appId], references: [id], onDelete: Cascade)
+  fields     FieldDefinition[]
+
+  @@unique([appId, name]) // An app cannot have duplicate entity names
+  @@index([appId])
+  @@map("entity_definitions")
+}
+
+model FieldDefinition {
+  id             String   @id @default(cuid())
+  entityId       String
+  name           String   // e.g. "fullName"
+  fieldType      String   // e.g. "string", "number", "relation"
+  required       Boolean  @default(false)
+  validations    Json?    // min, max, pattern, enum values, etc.
+  defaultValue   Json?
+  isUnique       Boolean  @default(false)
+  isIndexed      Boolean  @default(false)
+  relationTarget String?  // entity slug for relation fields
+  relationType   String?  // "belongsTo" | "hasMany" | "hasOne"
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  entity         EntityDefinition @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId, name]) // An entity cannot have duplicate field names
+  @@index([entityId])
+  @@map("field_definitions")
+}
