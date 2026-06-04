@@ -23,9 +23,9 @@ export default async function AppShellLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { appId: string };
+  params: Promise<{ appId: string }>;
 }) {
-  const { appId } = params;
+  const { appId } = await params;
 
   const appModel = await prisma.appDefinition.findUnique({ where: { id: appId } });
   if (!appModel?.uiDefinition) return notFound();

@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
@@ -13,13 +14,13 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
+  id           String   @id @default(cuid())
+  email        String   @unique
   passwordHash String
   name         String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
   // Relations
   refreshTokens  RefreshToken[]
   appDefinitions AppDefinition[]
@@ -35,8 +36,8 @@ model RefreshToken {
   expiresAt DateTime
   revoked   Boolean  @default(false)
   createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([tokenHash])
@@ -46,72 +47,73 @@ model RefreshToken {
 // --- Metadata Models (Phase 2) ---
 
 model AppDefinition {
-  id               String   @id @default(cuid())
-  userId           String
-  appName          String
-  version          Int      @default(1)
-  status           String   // "ACTIVE" | "DRAFT" | "DEPRECATED" | "INVALID"
-  rawDefinition    Json     // The original JSON string
-  uiDefinition     Json?    // The generated UI definition
-  validationReport Json?    // Any warnings or errors during parsing
-  deprecatedAt     DateTime?
+  id                String    @id @default(cuid())
+  userId            String
+  appName           String
+  version           Int       @default(1)
+  status            String // "ACTIVE" | "DRAFT" | "DEPRECATED" | "INVALID"
+  rawDefinition     Json // The original JSON string
+  uiDefinition      Json? // The generated UI definition
+  validationReport  Json? // Any warnings or errors during parsing
+  deprecatedAt      DateTime?
   deprecationReason String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entities         EntityDefinition[]
-  runtimeRecords   RuntimeRecord[]
-  auditLogs        SchemaAuditLog[]
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entities       EntityDefinition[]
+  runtimeRecords RuntimeRecord[]
+  auditLogs      SchemaAuditLog[]
+  versionHistory AppVersionHistory[]
 
   @@index([userId])
   @@map("app_definitions")
 }
 
 model EntityDefinition {
-  id               String   @id @default(cuid())
-  appId            String
-  name             String   // e.g. "Customer"
-  slug             String   // e.g. "customer"
-  stableId         String   // e.g. "ent_customer" (for schema evolution, scoped to appId)
-  softDelete       Boolean  @default(true)
-  timestamps       Boolean  @default(true)
-  config           Json?    // additional entity-level settings
-  sortOrder        Int      @default(0)
-  deprecatedAt     DateTime?
+  id                String    @id @default(cuid())
+  appId             String
+  name              String // e.g. "Customer"
+  slug              String // e.g. "customer"
+  stableId          String // e.g. "ent_customer" (for schema evolution, scoped to appId)
+  softDelete        Boolean   @default(true)
+  timestamps        Boolean   @default(true)
+  config            Json? // additional entity-level settings
+  sortOrder         Int       @default(0)
+  deprecatedAt      DateTime?
   deprecationReason String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  app              AppDefinition     @relation(fields: [appId], references: [id], onDelete: Cascade)
-  fields           FieldDefinition[]
+  app    AppDefinition     @relation(fields: [appId], references: [id], onDelete: Cascade)
+  fields FieldDefinition[]
 
   @@unique([appId, stableId]) // stableId is unique per app (not globally)
-  @@unique([appId, name])     // An app cannot have duplicate entity names
+  @@unique([appId, name]) // An app cannot have duplicate entity names
   @@index([appId])
   @@map("entity_definitions")
 }
 
 model FieldDefinition {
-  id             String   @id @default(cuid())
-  entityId       String
-  name           String   // e.g. "fullName"
-  stableId       String   // e.g. "fld_full_name"
-  fieldType      String   // e.g. "string", "number", "relation"
-  required       Boolean  @default(false)
-  validations    Json?    // min, max, pattern, enum values, etc.
-  defaultValue   Json?
-  isUnique       Boolean  @default(false)
-  isIndexed      Boolean  @default(false)
-  relationTarget String?  // entity stableId for relation fields (was slug)
-  relationType   String?  // "belongsTo" | "hasMany" | "hasOne"
-  sortOrder      Int      @default(0)
-  deprecatedAt   DateTime?
+  id                String    @id @default(cuid())
+  entityId          String
+  name              String // e.g. "fullName"
+  stableId          String // e.g. "fld_full_name"
+  fieldType         String // e.g. "string", "number", "relation"
+  required          Boolean   @default(false)
+  validations       Json? // min, max, pattern, enum values, etc.
+  defaultValue      Json?
+  isUnique          Boolean   @default(false)
+  isIndexed         Boolean   @default(false)
+  relationTarget    String? // entity stableId for relation fields (was slug)
+  relationType      String? // "belongsTo" | "hasMany" | "hasOne"
+  sortOrder         Int       @default(0)
+  deprecatedAt      DateTime?
   deprecationReason String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  entity         EntityDefinition @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  entity EntityDefinition @relation(fields: [entityId], references: [id], onDelete: Cascade)
 
   @@unique([entityId, name]) // An entity cannot have duplicate field names
   @@unique([entityId, stableId])
@@ -122,20 +124,36 @@ model FieldDefinition {
 // --- Evolution & Audit Models (Phase 4) ---
 
 model SchemaAuditLog {
-  id             String   @id @default(cuid())
-  appId          String
-  userId         String
-  fromVersion    Int
-  toVersion      Int
-  changeSummary  Json     // Array of changes or high-level summary
-  impactLevel    String   // "SAFE" | "WARNING" | "BREAKING"
-  migrationPlan  Json?    // Planned logic for migrations
-  createdAt      DateTime @default(now())
+  id            String   @id @default(cuid())
+  appId         String
+  userId        String
+  fromVersion   Int
+  toVersion     Int
+  changeSummary Json // Array of changes or high-level summary
+  impactLevel   String // "SAFE" | "WARNING" | "BREAKING"
+  migrationPlan Json? // Planned logic for migrations
+  createdAt     DateTime @default(now())
 
-  app            AppDefinition @relation(fields: [appId], references: [id], onDelete: Cascade)
+  app AppDefinition @relation(fields: [appId], references: [id], onDelete: Cascade)
 
   @@index([appId])
   @@map("schema_audit_logs")
+}
+
+model AppVersionHistory {
+  id            String   @id @default(cuid())
+  appId         String
+  version       Int
+  appDefinition Json
+  uiDefinition  Json?
+  changeSummary Json?
+  createdAt     DateTime @default(now())
+
+  app AppDefinition @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@index([appId])
+  @@index([appId, version])
+  @@map("app_version_history")
 }
 
 // --- Runtime Models (Phase 3) ---
@@ -144,14 +162,14 @@ model RuntimeRecord {
   id         String   @id @default(cuid())
   appId      String
   userId     String
-  entitySlug String   // e.g. "customer"
-  data       Json     // The actual record data as JSONB
+  entitySlug String // e.g. "customer"
+  data       Json // The actual record data as JSONB
   isDeleted  Boolean  @default(false) // Soft delete flag
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  app        AppDefinition @relation(fields: [appId], references: [id], onDelete: Cascade)
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  app  AppDefinition @relation(fields: [appId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Composite index for fast scoped queries (always filtered by user, app, and entity)
   @@index([appId, entitySlug, userId, isDeleted])

@@ -68,6 +68,16 @@ export class RefinementGenerator {
       }
     });
 
+    await prisma.appVersionHistory.create({
+      data: {
+        appId: appId,
+        version: newVersion,
+        appDefinition: refinedDef as any,
+        uiDefinition: uiDefinition as any,
+        changeSummary: evolutionReport as any,
+      }
+    });
+
     log.info({ appId, newVersion }, 'Refinement persisted');
 
     // 6. Seed data for NEW entities only (don't destroy existing records)

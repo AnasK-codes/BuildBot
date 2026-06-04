@@ -54,6 +54,22 @@ export class DraftAppService {
       data: { uiDefinition: uiDefinition as any }
     });
 
+    // Create initial version history snapshot
+    await prisma.appVersionHistory.create({
+      data: {
+        appId: app.id,
+        version: 1,
+        appDefinition: parsedDef as any,
+        uiDefinition: uiDefinition as any,
+        changeSummary: {
+          description: "Initial application creation",
+          safeChanges: [],
+          warningChanges: [],
+          breakingChanges: []
+        } as any
+      }
+    });
+
     const entities = parsedDef.entities || [];
     const entityNames = entities.map(e => e.name);
     

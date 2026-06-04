@@ -10,13 +10,13 @@ import { successResponse, generateRequestId } from '@/utils/response';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { appId: string } }
+  { params }: { params: Promise<{ appId: string }> }
 ) {
   const requestId = generateRequestId();
 
   try {
     authenticate(req);
-    const { appId } = params;
+    const { appId } = await params;
 
     const status = dataSeedingService.getStatus(appId);
 

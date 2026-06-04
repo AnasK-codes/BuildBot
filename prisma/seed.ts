@@ -1,129 +1,130 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
+import { SchemaGenerator } from '../src/core/ai/schema-generator';
+import { ValidationRepairLoop } from '../src/core/ai/repair-loop';
+import { RefinementPromptBuilder } from '../src/core/ai/refinement/refinement-prompt-builder';
+import { draftAppService } from '../src/core/ai/draft-app-service';
+import { dataSeedingService } from '../src/core/ai/data-seeding-service';
+import { PromptBuilder } from '../src/core/ai/prompt-builder';
 
 const prisma = new PrismaClient();
 
+const crmJson = `
+{
+  "appName": "CRM Hub",
+  "description": "Customer Relationship Management",
+  "entities": [
+    {
+      "id": "ent_customer",
+      "name": "Customer",
+      "timestamps": true,
+      "fields": [
+        { "id": "fld_c_name", "name": "name", "type": "string", "required": true },
+        { "id": "fld_c_email", "name": "email", "type": "string", "required": true },
+        { "id": "fld_c_status", "name": "status", "type": "enum", "enumValues": ["Active", "Lead", "Churned"] }
+      ]
+    },
+    {
+      "id": "ent_deal",
+      "name": "Deal",
+      "timestamps": true,
+      "fields": [
+        { "id": "fld_d_title", "name": "title", "type": "string", "required": true },
+        { "id": "fld_d_amount", "name": "amount", "type": "number", "required": true },
+        { "id": "fld_d_stage", "name": "stage", "type": "enum", "enumValues": ["Prospect", "Negotiation", "Closed Won", "Closed Lost"] },
+        { "id": "fld_d_customer", "name": "customerId", "type": "relation", "relation": { "entityId": "ent_customer", "type": "belongsTo" } }
+      ]
+    }
+  ]
+}`;
+
+const inventoryJson = `
+{
+  "appName": "Inventory Pro",
+  "description": "Warehouse and Stock Tracking",
+  "entities": [
+    {
+      "id": "ent_product",
+      "name": "Product",
+      "timestamps": true,
+      "fields": [
+        { "id": "fld_p_sku", "name": "sku", "type": "string", "required": true, "unique": true },
+        { "id": "fld_p_name", "name": "name", "type": "string", "required": true },
+        { "id": "fld_p_price", "name": "price", "type": "number", "required": true },
+        { "id": "fld_p_stock", "name": "stockLevel", "type": "number", "required": true }
+      ]
+    },
+    {
+      "id": "ent_supplier",
+      "name": "Supplier",
+      "timestamps": true,
+      "fields": [
+        { "id": "fld_s_name", "name": "name", "type": "string", "required": true },
+        { "id": "fld_s_contact", "name": "contactEmail", "type": "string" }
+      ]
+    }
+  ]
+}`;
+
+const projectJson = `
+{
+  "appName": "Project Tracker",
+  "description": "Task and Project Management",
+  "entities": [
+    {
+      "id": "ent_project",
+      "name": "Project",
+      "timestamps": true,
+      "fields": [
+        { "id": "fld_pr_name", "name": "name", "type": "string", "required": true },
+        { "id": "fld_pr_status", "name": "status", "type": "enum", "enumValues": ["Planning", "Active", "Completed"] }
+      ]
+    },
+    {
+      "id": "ent_task",
+      "name": "Task",
+      "timestamps": true,
+      "fields": [
+        { "id": "fld_t_title", "name": "title", "type": "string", "required": true },
+        { "id": "fld_t_completed", "name": "isCompleted", "type": "boolean" },
+        { "id": "fld_t_project", "name": "projectId", "type": "relation", "relation": { "entityId": "ent_project", "type": "belongsTo" } }
+      ]
+    }
+  ]
+}`;
+
 async function main() {
-  console.log('🌱 Starting database seed...');
-
-  // 1. Clean existing data
-  await prisma.runtimeRecord.deleteMany();
-  await prisma.fieldDefinition.deleteMany();
-  await prisma.entityDefinition.deleteMany();
-  await prisma.appDefinition.deleteMany();
-  await prisma.user.deleteMany();
-
-  // 2. Create Demo User
-  const passwordHash = await bcrypt.hash('password123', 10);
-  const user = await prisma.user.create({
-    data: {
-      email: 'demo@buildbot.ai',
+  console.log('Seeding Reviewer Account...');
+  
+  const passwordHash = await bcrypt.hash('reviewer123!', 12);
+  
+  const reviewer = await prisma.user.upsert({
+    where: { email: 'reviewer@buildbot.local' },
+    update: {},
+    create: {
+      email: 'reviewer@buildbot.local',
+      name: 'Reviewer',
       passwordHash,
-      firstName: 'Demo',
-      lastName: 'User',
     },
   });
-  console.log(`✅ Created User: ${user.email}`);
 
-  // 3. Create CRM Application
-  const crmApp = await prisma.appDefinition.create({
-    data: {
-      userId: user.id,
-      appName: 'CRM',
-      version: 1,
-      status: 'ACTIVE',
-      rawDefinition: JSON.stringify({ appName: 'CRM' }),
-      entities: {
-        create: [
-          {
-            name: 'Company',
-            slug: 'company',
-            stableId: 'ent_crm_company',
-            sortOrder: 1,
-            fields: {
-              create: [
-                { name: 'name', stableId: 'fld_company_name', fieldType: 'string', required: true, sortOrder: 1 },
-                { name: 'website', stableId: 'fld_company_website', fieldType: 'url', sortOrder: 2 },
-              ]
-            }
-          },
-          {
-            name: 'Contact',
-            slug: 'contact',
-            stableId: 'ent_crm_contact',
-            sortOrder: 2,
-            fields: {
-              create: [
-                { name: 'fullName', stableId: 'fld_contact_name', fieldType: 'string', required: true, sortOrder: 1 },
-                { name: 'email', stableId: 'fld_contact_email', fieldType: 'email', required: true, sortOrder: 2 },
-                { name: 'companyId', stableId: 'fld_contact_company', fieldType: 'relation', relationTarget: 'ent_crm_company', relationType: 'belongsTo', sortOrder: 3 },
-              ]
-            }
-          }
-        ]
-      }
-    }
-  });
-  console.log(`✅ Created App: CRM`);
+  console.log('Clearing old apps for reviewer...');
+  await prisma.appDefinition.deleteMany({ where: { userId: reviewer.id } });
 
-  // 4. Create CRM Runtime Records
-  const company1 = await prisma.runtimeRecord.create({
-    data: {
-      appId: crmApp.id,
-      userId: user.id,
-      entitySlug: 'company',
-      data: { name: 'Acme Corp', website: 'https://acme.com' },
-    }
-  });
-  await prisma.runtimeRecord.create({
-    data: {
-      appId: crmApp.id,
-      userId: user.id,
-      entitySlug: 'contact',
-      data: { fullName: 'John Doe', email: 'john@acme.com', companyId: company1.id },
-    }
-  });
+  console.log('Creating CRM App...');
+  const crm = await draftAppService.createDraftApp(reviewer.id, crmJson, 'CRM');
+  await dataSeedingService.triggerSeed(crm.app.id, reviewer.id, JSON.parse(crmJson), 'CRM');
 
-  // 5. Create E-Commerce Application
-  const ecomApp = await prisma.appDefinition.create({
-    data: {
-      userId: user.id,
-      appName: 'E-Commerce',
-      version: 1,
-      status: 'ACTIVE',
-      rawDefinition: JSON.stringify({ appName: 'E-Commerce' }),
-      entities: {
-        create: [
-          {
-            name: 'Product',
-            slug: 'product',
-            stableId: 'ent_ecom_product',
-            sortOrder: 1,
-            fields: {
-              create: [
-                { name: 'title', stableId: 'fld_product_title', fieldType: 'string', required: true, sortOrder: 1 },
-                { name: 'price', stableId: 'fld_product_price', fieldType: 'number', required: true, sortOrder: 2 },
-                { name: 'inStock', stableId: 'fld_product_stock', fieldType: 'boolean', defaultValue: 'true', sortOrder: 3 },
-              ]
-            }
-          }
-        ]
-      }
-    }
-  });
-  console.log(`✅ Created App: E-Commerce`);
+  console.log('Creating Inventory App...');
+  const inv = await draftAppService.createDraftApp(reviewer.id, inventoryJson, 'INVENTORY');
+  await dataSeedingService.triggerSeed(inv.app.id, reviewer.id, JSON.parse(inventoryJson), 'INVENTORY');
 
-  // 6. Create E-Commerce Runtime Records
-  await prisma.runtimeRecord.create({
-    data: {
-      appId: ecomApp.id,
-      userId: user.id,
-      entitySlug: 'product',
-      data: { title: 'Wireless Headphones', price: 199.99, inStock: true },
-    }
-  });
+  console.log('Creating Project Tracker App...');
+  const proj = await draftAppService.createDraftApp(reviewer.id, projectJson, 'PROJECT_MANAGEMENT');
+  await dataSeedingService.triggerSeed(proj.app.id, reviewer.id, JSON.parse(projectJson), 'PROJECT_MANAGEMENT');
 
-  console.log('🎉 Database seeding complete!');
+  console.log('Seed completed successfully!');
 }
 
 main()

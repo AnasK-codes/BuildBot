@@ -10,17 +10,27 @@ import prisma from '@/lib/prisma';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { appId: string } }
+  { params }: { params: Promise<{ appId: string }> }
 ) {
   const requestId = generateRequestId();
 
   try {
     authenticate(req);
-    const { appId } = params;
+    const { appId } = await params;
 
     const app = await prisma.appDefinition.findUnique({
       where: { id: appId },
-      select: { id: true, appName: true, version: true, status: true, createdAt: true, updatedAt: true }
+      select: { 
+        id: true, 
+        appName: true, 
+        version: true, 
+        status: true, 
+        createdAt: true, 
+        updatedAt: true,
+        versionHistory: {
+          orderBy: { version: 'desc' }
+        }
+      }
     });
 
     if (!app) {
@@ -34,6 +44,7 @@ export async function GET(
       status: app.status,
       createdAt: app.createdAt,
       updatedAt: app.updatedAt,
+      history: app.versionHistory,
     }, 200, { requestId });
   } catch (error) {
     return handleError(error, requestId);

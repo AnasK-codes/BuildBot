@@ -13,13 +13,13 @@ const appService = new AppDefinitionService();
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { appId: string } }
+  { params }: { params: Promise<{ appId: string }> }
 ) {
   const requestId = generateRequestId();
 
   try {
     const user = authenticate(req);
-    const { appId } = params;
+    const { appId } = await params;
 
     const app = await appService.getAppDefinition(user.userId, appId);
 
