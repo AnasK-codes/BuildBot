@@ -14,6 +14,7 @@ import { AppUIDefinition } from '@/types/ui-metadata.types';
 import { PageContextProvider } from '@/lib/page-context';
 import SidebarRenderer from '@/core/ui/renderers/SidebarRenderer';
 import { MetadataErrorBoundary } from '@/core/ui/renderers/MetadataErrorBoundary';
+import RefinePanel from '@/core/ui/renderers/RefinePanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,8 +55,9 @@ export default async function AppShellLayout({
       <PageContextProvider value={contextValue}>
         <div className="flex h-screen w-full overflow-hidden bg-gray-50 font-sans antialiased">
           <SidebarRenderer uiDef={uiDefinition} appId={appId} />
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto relative">
             {children}
+            <RefinePanel appId={appId} />
           </main>
         </div>
       </PageContextProvider>
