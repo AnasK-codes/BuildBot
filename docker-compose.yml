@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: buildbot-app
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/buildbot?schema=public
+      - JWT_SECRET=super_secret_jwt_key_for_demo_purposes_only_do_not_use_in_prod
+      - JWT_REFRESH_SECRET=another_super_secret_refresh_key_for_demo
+      - NODE_ENV=production
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - buildbot-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: buildbot-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=buildbot
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d buildbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - buildbot-network
+
+volumes:
+  pgdata:
+
+networks:
+  buildbot-network:
+    driver: bridge
