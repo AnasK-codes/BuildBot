@@ -9,7 +9,7 @@ import { AppDefinition } from '@/types/metadata.types';
 import { ContextAggregator, AppContext } from './context-aggregator';
 import { RefinementPromptBuilder } from './refinement-prompt-builder';
 import { RefinementPreview, RefinementResult, RefinementImpact } from './refinement.types';
-import { SchemaGenerator } from '../schema-generator';
+import { ProviderFactory } from '../providers/provider-factory';
 import { ValidationRepairLoop } from '../repair-loop';
 import { ValidationEngine } from '../../validation/validation-engine';
 import { EvolutionReportGenerator } from '../../evolution/report-generator';
@@ -23,8 +23,8 @@ import { createModuleLogger } from '@/lib/logger';
 const log = createModuleLogger('refinement-generator');
 
 export class RefinementGenerator {
-  private schemaGenerator = new SchemaGenerator();
-  private repairLoop = new ValidationRepairLoop(this.schemaGenerator);
+  private provider = ProviderFactory.getProvider();
+  private repairLoop = new ValidationRepairLoop(this.provider);
 
   /**
    * Generate a preview of what the refinement would change
@@ -117,7 +117,7 @@ export class RefinementGenerator {
     const systemPrompt = RefinementPromptBuilder.buildSystemPrompt();
     const userPrompt = RefinementPromptBuilder.buildUserPrompt(context, instruction);
 
-    const result = await this.repairLoop.execute(systemPrompt, userPrompt);
+    const result = await this.repairLoop.execute(systemPrompt, userPrompt, 3, true);
 
     if (!result.report.valid || !result.appDefinition) {
       throw new Error(`Refinement failed validation after repair attempts. Errors: ${JSON.stringify(result.report.errors)}`);

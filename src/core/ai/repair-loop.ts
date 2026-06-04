@@ -6,7 +6,7 @@
 // ============================================================
 
 import { ValidationEngine } from '../validation/validation-engine';
-import { SchemaGenerator } from './schema-generator';
+import { AIProvider } from './providers/ai-provider';
 import { PromptBuilder } from './prompt-builder';
 import { AppDefinition, ValidationReport } from '@/types/metadata.types';
 import { createModuleLogger } from '@/lib/logger';
@@ -22,12 +22,12 @@ export interface RepairLoopResult {
 export class ValidationRepairLoop {
   private validationEngine = new ValidationEngine();
 
-  constructor(private schemaGenerator: SchemaGenerator) {}
+  constructor(private provider: AIProvider) {}
 
   /**
    * Executes the AI generation with up to 3 repair attempts.
    */
-  public async execute(systemPrompt: string, userPrompt: string, maxAttempts = 3): Promise<RepairLoopResult> {
+  public async execute(systemPrompt: string, userPrompt: string, maxAttempts = 3, isRefinement = false): Promise<RepairLoopResult> {
     let currentAttempt = 1;
     let currentUserPrompt = userPrompt;
     let lastJson = '';
@@ -36,7 +36,16 @@ export class ValidationRepairLoop {
     while (currentAttempt <= maxAttempts) {
       log.info(`Generation attempt ${currentAttempt}/${maxAttempts}`);
       
-      const jsonOutput = await this.schemaGenerator.generateJSON(systemPrompt, currentUserPrompt);
+      let jsonOutput = '';
+      if (currentAttempt === 1) {
+        if (isRefinement) {
+          jsonOutput = await this.provider.refineSchema(systemPrompt, currentUserPrompt);
+        } else {
+          jsonOutput = await this.provider.generateSchema(systemPrompt, currentUserPrompt);
+        }
+      } else {
+        jsonOutput = await this.provider.generateRepair(systemPrompt, currentUserPrompt);
+      }
       lastJson = jsonOutput;
       
       const validationReport = await this.validationEngine.validateAppDefinition(jsonOutput);

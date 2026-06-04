@@ -9,6 +9,7 @@ import { ArchetypeType } from './archetypes/archetype.types';
 import { TopologicalSorter } from './topological-sorter';
 import { OperationExecutor } from '../runtime/operation-executor';
 import { createModuleLogger } from '@/lib/logger';
+import { ProviderFactory } from './providers/provider-factory';
 import { SeedTemplates } from './seed-templates';
 import { RuntimeContext } from '@/types/runtime.types';
 
@@ -24,6 +25,7 @@ export interface SeedProgress {
 export class DataSeedingService {
   private statusMap = new Map<string, SeedProgress>();
   private executor = new OperationExecutor();
+  private provider = ProviderFactory.getProvider();
 
   public getStatus(appId: string): SeedProgress {
     return this.statusMap.get(appId) || { status: 'PENDING' };
@@ -53,7 +55,13 @@ export class DataSeedingService {
       for (const entity of sortedEntities) {
         this.statusMap.set(appId, { status: 'RUNNING', message: `Seeding ${entity.name}...` });
         
-        const recordsToCreate = this.generateRecords(entity, contextTemplate, createdIds);
+        let recordsToCreate = [];
+        try {
+          recordsToCreate = await this.generateRecordsWithAI(entity, createdIds, archetype);
+        } catch (err) {
+          log.warn({ err, entity: entity.name }, 'AI seed generation failed. Falling back to deterministic templates.');
+          recordsToCreate = this.generateRecords(entity, contextTemplate, createdIds);
+        }
         const entityIds: string[] = [];
 
         // Synthesize context for the OperationExecutor
@@ -90,6 +98,50 @@ export class DataSeedingService {
         message: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
+  }
+
+  private async generateRecordsWithAI(
+    entity: EntityDefinition,
+    createdIds: Record<string, string[]>,
+    archetype: string
+  ): Promise<any[]> {
+    const belongsToFields = entity.fields.filter(f => f.type === 'relation' && f.relation?.type === 'belongsTo');
+    const count = belongsToFields.length > 0 ? 15 : 5;
+
+    // Build lists of available foreign keys to provide to the AI
+    const availableParents: Record<string, string[]> = {};
+    belongsToFields.forEach(f => {
+      const targetIds = createdIds[f.relation!.entityId];
+      if (targetIds && targetIds.length > 0) {
+        availableParents[f.name] = targetIds;
+      }
+    });
+
+    const systemPrompt = `You are a helpful data generation assistant. Generate ${count} sample JSON records for the '${entity.name}' entity in a '${archetype}' application.
+Your response MUST be ONLY a JSON array of objects. No markdown formatting, no explanations.
+
+Entity Schema:
+${JSON.stringify(entity.fields.filter(f => f.type !== 'relation').map(f => ({ name: f.name, type: f.type, required: f.required })), null, 2)}
+
+Available Parent IDs for Foreign Keys:
+${JSON.stringify(availableParents, null, 2)}
+
+Instructions:
+1. For each record, generate realistic scalar values matching the field types.
+2. For each parent in 'Available Parent IDs', you MUST randomly assign one of the provided IDs to the corresponding field name.
+3. Return ONLY a valid JSON array like: [{"field1": "value", "field2": 123}]`;
+
+    const resultStr = await this.provider.generateSeedData(systemPrompt, 'Generate the records now.');
+    
+    // Attempt to parse. Groq/Gemini might wrap in markdown even in JSON mode, so strip it just in case.
+    const cleanStr = resultStr.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+    const records = JSON.parse(cleanStr);
+    
+    if (!Array.isArray(records)) {
+      throw new Error('AI did not return a JSON array');
+    }
+    
+    return records;
   }
 
   private generateRecords(

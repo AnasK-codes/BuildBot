@@ -5,7 +5,7 @@
 // into a valid AppDefinition.
 // ============================================================
 
-import { SchemaGenerator } from './schema-generator';
+import { ProviderFactory } from './providers/provider-factory';
 import { ValidationRepairLoop, RepairLoopResult } from './repair-loop';
 import { PromptBuilder } from './prompt-builder';
 import { IntentClassifier } from './archetypes/intent-classifier';
@@ -16,8 +16,8 @@ import { createModuleLogger } from '@/lib/logger';
 const log = createModuleLogger('ai-service');
 
 export class AIGenerationService {
-  private schemaGenerator = new SchemaGenerator();
-  private repairLoop = new ValidationRepairLoop(this.schemaGenerator);
+  private provider = ProviderFactory.getProvider();
+  private repairLoop = new ValidationRepairLoop(this.provider);
 
   /**
    * Generates a new AppDefinition from scratch based on a prompt.

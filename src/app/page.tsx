@@ -144,8 +144,8 @@ export default function HomePage() {
                   const isCurrent = generationStep === idx;
                   
                   return (
-                    <div key={idx} className={\`flex items-center gap-3 \${isPast ? 'text-green-600' : isCurrent ? 'text-indigo-600 font-medium' : 'text-gray-400'}\`}>
-                      <div className={\`w-6 h-6 flex items-center justify-center rounded-full \${isPast ? 'bg-green-100' : isCurrent ? 'bg-indigo-100 animate-pulse' : 'bg-gray-100'}\`}>
+                    <div key={idx} className={`flex items-center gap-3 ${isPast ? 'text-green-600' : isCurrent ? 'text-indigo-600 font-medium' : 'text-gray-400'}`}>
+                      <div className={`w-6 h-6 flex items-center justify-center rounded-full ${isPast ? 'bg-green-100' : isCurrent ? 'bg-indigo-100 animate-pulse' : 'bg-gray-100'}`}>
                         {isPast ? <CheckCircle size={14} /> : step.icon}
                       </div>
                       <span className="text-sm">{step.name}</span>
