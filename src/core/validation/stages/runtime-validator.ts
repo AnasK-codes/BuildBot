@@ -127,7 +127,7 @@ export class RuntimeValidator {
       case 'enum':
         if (typeof value !== 'string') return 'Expected a string';
         if (!field.enumValues?.includes(value)) {
-          return \`Must be one of: \${field.enumValues?.join(', ')}\`;
+          return `Must be one of: ${field.enumValues?.join(', ')}`;
         }
         break;
 
@@ -141,7 +141,7 @@ export class RuntimeValidator {
         break;
 
       default:
-        return \`Unknown field type: \${field.type}\`;
+        return `Unknown field type: ${field.type}`;
     }
 
     return null;

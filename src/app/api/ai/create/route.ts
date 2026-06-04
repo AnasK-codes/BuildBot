@@ -6,6 +6,7 @@ import { NextRequest } from 'next/server';
 import { authenticate } from '@/core/auth';
 import { aiGenerationService } from '@/core/ai/ai-service';
 import { draftAppService } from '@/core/ai/draft-app-service';
+import { dataSeedingService } from '@/core/ai/data-seeding-service';
 import { handleError, ValidationError } from '@/core/errors';
 import { successResponse, generateRequestId } from '@/utils/response';
 import { z } from 'zod';
@@ -48,9 +49,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Persist as a DRAFT application
-    const { summary } = await draftAppService.createDraftApp(
+    const { app, summary } = await draftAppService.createDraftApp(
       user.userId,
       aiResult.json,
+      aiResult.archetype
+    );
+    
+    // Asynchronously generate and insert sample data
+    let parsedDef: any;
+    try {
+      parsedDef = typeof app.rawDefinition === 'string' ? JSON.parse(app.rawDefinition) : app.rawDefinition;
+    } catch {
+      parsedDef = JSON.parse(aiResult.json);
+    }
+
+    dataSeedingService.triggerSeed(
+      app.id,
+      user.userId,
+      parsedDef,
       aiResult.archetype
     );
     
