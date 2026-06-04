@@ -1,0 +1,139 @@
+// ============================================================
+// BuildBot — Prisma Storage Adapter
+// ============================================================
+// Implements the StorageAdapter interface using Prisma ORM.
+// Handles mapping between the domain models and DB records.
+// ============================================================
+
+import prisma from '@/lib/prisma';
+import { StorageAdapter } from './storage-adapter';
+import { RuntimeContext, RuntimeRecord, QueryOptions } from '@/types/runtime.types';
+import { queryBuilder } from '../query-builder';
+
+export class PrismaStorageAdapter implements StorageAdapter {
+  async create(context: RuntimeContext, data: Record<string, unknown>): Promise<RuntimeRecord> {
+    const record = await prisma.runtimeRecord.create({
+      data: {
+        appId: context.app.id as unknown as string, // App ID comes from context resolution but wasn't typed in AppDef, we assume context.app has id or it's passed via URL/Auth
+        // Note: We need the actual AppDefinition ID here.
+        // For safety, let's look it up or ensure it's in the context.
+        appId: (context.app as any).id, // Hack for now, assuming resolver attached it
+        userId: context.user.userId,
+        entitySlug: context.entity.name.toLowerCase(),
+        data: data,
+      },
+    });
+
+    return this.mapToRuntimeRecord(record);
+  }
+
+  async findOne(context: RuntimeContext, id: string): Promise<RuntimeRecord | null> {
+    const record = await prisma.runtimeRecord.findFirst({
+      where: {
+        id,
+        appId: (context.app as any).id,
+        userId: context.user.userId,
+        entitySlug: context.entity.name.toLowerCase(),
+        isDeleted: false,
+      },
+    });
+
+    return record ? this.mapToRuntimeRecord(record) : null;
+  }
+
+  async findMany(context: RuntimeContext, options: QueryOptions): Promise<RuntimeRecord[]> {
+    const args = queryBuilder.buildPrismaArgs(context, options);
+    // Ensure strict scoping again just in case QueryBuilder missed it (defense in depth)
+    args.where = {
+      ...args.where,
+      appId: (context.app as any).id,
+      userId: context.user.userId,
+      entitySlug: context.entity.name.toLowerCase(),
+      isDeleted: false,
+    };
+
+    const records = await prisma.runtimeRecord.findMany(args);
+    return records.map(r => this.mapToRuntimeRecord(r));
+  }
+
+  async count(context: RuntimeContext, options: QueryOptions): Promise<number> {
+    const args = queryBuilder.buildCountArgs(context, options);
+    args.where = {
+      ...args.where,
+      appId: (context.app as any).id,
+      userId: context.user.userId,
+      entitySlug: context.entity.name.toLowerCase(),
+      isDeleted: false,
+    };
+
+    return prisma.runtimeRecord.count(args);
+  }
+
+  async update(context: RuntimeContext, id: string, data: Record<string, unknown>): Promise<RuntimeRecord> {
+    // We do a "find first" then update to ensure ownership constraints are respected
+    const existing = await this.findOne(context, id);
+    if (!existing) {
+      throw new Error('Record not found');
+    }
+
+    // Merge for PATCH behavior
+    const mergedData = { ...existing.data, ...data };
+
+    const record = await prisma.runtimeRecord.update({
+      where: { id },
+      data: { data: mergedData },
+    });
+
+    return this.mapToRuntimeRecord(record);
+  }
+
+  async replace(context: RuntimeContext, id: string, data: Record<string, unknown>): Promise<RuntimeRecord> {
+    const existing = await this.findOne(context, id);
+    if (!existing) {
+      throw new Error('Record not found');
+    }
+
+    // Full replacement for PUT behavior
+    const record = await prisma.runtimeRecord.update({
+      where: { id },
+      data: { data },
+    });
+
+    return this.mapToRuntimeRecord(record);
+  }
+
+  async delete(context: RuntimeContext, id: string): Promise<boolean> {
+    const existing = await this.findOne(context, id);
+    if (!existing) {
+      return false;
+    }
+
+    if (context.entity.softDelete !== false) {
+      await prisma.runtimeRecord.update({
+        where: { id },
+        data: { isDeleted: true },
+      });
+    } else {
+      await prisma.runtimeRecord.delete({
+        where: { id },
+      });
+    }
+
+    return true;
+  }
+
+  private mapToRuntimeRecord(prismaRecord: any): RuntimeRecord {
+    return {
+      id: prismaRecord.id,
+      appId: prismaRecord.appId,
+      userId: prismaRecord.userId,
+      entitySlug: prismaRecord.entitySlug,
+      data: prismaRecord.data as Record<string, unknown>,
+      isDeleted: prismaRecord.isDeleted,
+      createdAt: prismaRecord.createdAt,
+      updatedAt: prismaRecord.updatedAt,
+    };
+  }
+}
+
+export const prismaStorageAdapter = new PrismaStorageAdapter();

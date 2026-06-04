@@ -23,6 +23,7 @@ model User {
   // Relations
   refreshTokens  RefreshToken[]
   appDefinitions AppDefinition[]
+  runtimeRecords RuntimeRecord[]
 
   @@map("users")
 }
@@ -57,6 +58,7 @@ model AppDefinition {
 
   user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   entities         EntityDefinition[]
+  runtimeRecords   RuntimeRecord[]
 
   @@index([userId])
   @@map("app_definitions")
@@ -103,4 +105,24 @@ model FieldDefinition {
   @@unique([entityId, name]) // An entity cannot have duplicate field names
   @@index([entityId])
   @@map("field_definitions")
+}
+
+// --- Runtime Models (Phase 3) ---
+
+model RuntimeRecord {
+  id         String   @id @default(cuid())
+  appId      String
+  userId     String
+  entitySlug String   // e.g. "customer"
+  data       Json     // The actual record data as JSONB
+  isDeleted  Boolean  @default(false) // Soft delete flag
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  app        AppDefinition @relation(fields: [appId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Composite index for fast scoped queries (always filtered by user, app, and entity)
+  @@index([appId, entitySlug, userId, isDeleted])
+  @@map("runtime_records")
 }
