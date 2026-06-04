@@ -11,8 +11,8 @@ export class PromptBuilder {
   /**
    * Builds the system prompt for generating an AppDefinition from scratch.
    */
-  public static buildSystemPrompt(): string {
-    return `You are a Principal Backend Architect.
+  public static buildSystemPrompt(augmentedContext: string | null = null): string {
+    let prompt = `You are a Principal Backend Architect.
 Your task is to generate a Domain Metadata Schema (AppDefinition) based on the user's prompt.
 You must output ONLY valid JSON that conforms to the system's AppDefinition schema.
 
@@ -25,8 +25,13 @@ You must output ONLY valid JSON that conforms to the system's AppDefinition sche
    - You MUST include a "relation" object on the field: { "entityId": "ent_target", "type": "belongsTo" | "hasMany" | "hasOne" }.
    - The "entityId" must precisely match the stable ID of the target entity.
 6. Automatically add standard fields like "createdAt" or "updatedAt" IF they are semantically required by the business logic, but note that the engine handles basic timestamps automatically if the entity's "timestamps" property is true (which is the default).
-7. Keep it realistic. A CRM should have reasonable fields (Name, Email, Phone, Status).
+7. Keep it realistic. A CRM should have reasonable fields (Name, Email, Phone, Status).`;
 
+    if (augmentedContext) {
+      prompt += `\n${augmentedContext}`;
+    }
+
+    prompt += `\n
 # Output Schema (JSON):
 {
   "appName": "String",
@@ -60,6 +65,8 @@ You must output ONLY valid JSON that conforms to the system's AppDefinition sche
 }
 
 DO NOT include markdown formatting (\`\`\`json) in your output. Output RAW JSON ONLY.`;
+
+    return prompt;
   }
 
   /**
