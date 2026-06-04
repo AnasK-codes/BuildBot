@@ -114,20 +114,32 @@ export class OperationExecutor {
       if (field.type === 'relation' && field.relation && data[field.name]) {
         const targetId = data[field.name] as string;
         const targetEntityStableId = field.relation.entityId;
-        
-        // Find the target record
-        // We create a temporary context to fetch the related entity
+
+        // Resolve the target entity's real name from the AppDefinition to get the correct slug.
+        // RuntimeRecords are stored using the entity's lowercased display name, not the stableId.
+        const targetEntityDef = context.app.entities.find(e => e.id === targetEntityStableId);
+        if (!targetEntityDef) {
+          throw new ValidationError('Relation validation failed', {
+            errors: {
+              [field.name]: `Related entity '${targetEntityStableId}' is not defined in this application.`
+            }
+          });
+        }
+
+        const targetEntitySlug = targetEntityDef.name.toLowerCase();
+
+        // Build a scoped context for the target entity lookup
         const targetContext: RuntimeContext = {
           ...context,
-          entity: { ...context.entity, id: targetEntityStableId, name: targetEntityStableId } // mock for validation
+          entity: targetEntityDef,
         };
 
         const targetRecord = await this.storage.findOne(targetContext, targetId);
-        
+
         if (!targetRecord) {
           throw new ValidationError('Relation validation failed', {
             errors: {
-              [field.name]: `Related record '${targetId}' in entity '${field.relation.entityId}' does not exist.`
+              [field.name]: `Related record '${targetId}' in entity '${targetEntityDef.name}' does not exist.`
             }
           });
         }

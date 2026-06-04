@@ -12,12 +12,14 @@ import { queryBuilder } from '../query-builder';
 
 export class PrismaStorageAdapter implements StorageAdapter {
   async create(context: RuntimeContext, data: Record<string, unknown>): Promise<RuntimeRecord> {
+    const appId = context.app.id;
+    if (!appId) {
+      throw new Error('Cannot create RuntimeRecord: app.id is missing from context');
+    }
+
     const record = await prisma.runtimeRecord.create({
       data: {
-        appId: context.app.id as unknown as string, // App ID comes from context resolution but wasn't typed in AppDef, we assume context.app has id or it's passed via URL/Auth
-        // Note: We need the actual AppDefinition ID here.
-        // For safety, let's look it up or ensure it's in the context.
-        appId: (context.app as any).id, // Hack for now, assuming resolver attached it
+        appId,
         userId: context.user.userId,
         entitySlug: context.entity.name.toLowerCase(),
         data: data,
@@ -31,7 +33,7 @@ export class PrismaStorageAdapter implements StorageAdapter {
     const record = await prisma.runtimeRecord.findFirst({
       where: {
         id,
-        appId: (context.app as any).id,
+        appId: context.app.id,
         userId: context.user.userId,
         entitySlug: context.entity.name.toLowerCase(),
         isDeleted: false,
@@ -46,21 +48,21 @@ export class PrismaStorageAdapter implements StorageAdapter {
     // Ensure strict scoping again just in case QueryBuilder missed it (defense in depth)
     args.where = {
       ...args.where,
-      appId: (context.app as any).id,
+      appId: context.app.id,
       userId: context.user.userId,
       entitySlug: context.entity.name.toLowerCase(),
       isDeleted: false,
     };
 
     const records = await prisma.runtimeRecord.findMany(args);
-    return records.map(r => this.mapToRuntimeRecord(r));
+    return records.map((r: any) => this.mapToRuntimeRecord(r));
   }
 
   async count(context: RuntimeContext, options: QueryOptions): Promise<number> {
     const args = queryBuilder.buildCountArgs(context, options);
     args.where = {
       ...args.where,
-      appId: (context.app as any).id,
+      appId: context.app.id,
       userId: context.user.userId,
       entitySlug: context.entity.name.toLowerCase(),
       isDeleted: false,

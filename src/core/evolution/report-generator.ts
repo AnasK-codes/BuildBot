@@ -8,7 +8,7 @@
 import { AppDefinition } from '@/types/metadata.types';
 import { SchemaDiffer } from './schema-differ';
 import { SchemaImpactAnalyzer } from './impact-analyzer';
-import { SchemaEvolutionReport, MigrationPlanStep, ChangeSeverity } from './evolution.types';
+import { SchemaEvolutionReport, MigrationPlanStep, ChangeSeverity, SchemaChange } from './evolution.types';
 
 export class EvolutionReportGenerator {
   public static generate(oldApp: AppDefinition, newApp: AppDefinition): SchemaEvolutionReport {

@@ -72,7 +72,7 @@ model EntityDefinition {
   appId            String
   name             String   // e.g. "Customer"
   slug             String   // e.g. "customer"
-  stableId         String   @unique // e.g. "ent_customer" (for schema evolution)
+  stableId         String   // e.g. "ent_customer" (for schema evolution, scoped to appId)
   softDelete       Boolean  @default(true)
   timestamps       Boolean  @default(true)
   config           Json?    // additional entity-level settings
@@ -85,7 +85,8 @@ model EntityDefinition {
   app              AppDefinition     @relation(fields: [appId], references: [id], onDelete: Cascade)
   fields           FieldDefinition[]
 
-  @@unique([appId, name]) // An app cannot have duplicate entity names within its version
+  @@unique([appId, stableId]) // stableId is unique per app (not globally)
+  @@unique([appId, name])     // An app cannot have duplicate entity names
   @@index([appId])
   @@map("entity_definitions")
 }

@@ -7,7 +7,7 @@
 import prisma from '@/lib/prisma';
 import { ValidationEngine } from '../validation/validation-engine';
 import { schemaRegistry } from './schema-registry';
-import { MetadataValidationResult, AppDefinition, AppStatus } from '@/types/metadata.types';
+import { MetadataValidationResult, AppDefinition, AppStatus, EntityDefinition } from '@/types/metadata.types';
 import { createModuleLogger } from '@/lib/logger';
 import { EvolutionReportGenerator } from '../evolution/report-generator';
 import { SchemaEvolutionReport } from '../evolution/evolution.types';
@@ -24,7 +24,7 @@ export class MetadataEngine {
     const report = await this.validator.validateAppDefinition(rawJson);
     
     let appDefinition: AppDefinition | null = null;
-    let validEntities = [];
+    let validEntities: EntityDefinition[] = [];
 
     if (report.summary.stageReached === 'business_validation' || report.valid) {
       appDefinition = JSON.parse(rawJson) as AppDefinition;
@@ -68,12 +68,12 @@ export class MetadataEngine {
       }
     }
 
-    // 3. Apply Surgical Updates
-    await prisma.$transaction(async (tx) => {
+    // 3. Apply Surgical Updates (inside a single transaction for atomicity)
+    await prisma.$transaction(async (tx: any) => {
       const currentApp = await tx.appDefinition.findUnique({ where: { id: appId } });
       const nextVersion = (currentApp?.version || 1) + 1;
 
-      // Update App level metadata
+      // Update App-level metadata
       await tx.appDefinition.update({
         where: { id: appId },
         data: {
@@ -85,30 +85,10 @@ export class MetadataEngine {
         }
       });
 
-      if (oldApp && evolutionReport) {
-        // --- SURGICAL SCHEMA UPDATE (Phase 4) ---
-        // Instead of deleteMany, we update/insert/deprecate based on the schema differ report
-        
-        // Find entities/fields to deprecate
-        for (const req of evolutionReport.migrationRequirements) {
-          if (req.action === 'MARK_DEPRECATED') {
-            if (req.fieldId) {
-              await tx.fieldDefinition.update({
-                where: { id: req.fieldId }, // Requires stable IDs to map correctly to DB ID, which is slightly tricky if we used cuid for DB ID and something else for stable ID.
-                // Assuming stableId is matched here. Let's do it by stableId!
-              });
-              // Wait, prisma field definition id is cuid, stableId is what user provides.
-            }
-          }
-        }
-      }
-
-      // To fully implement surgical updates based purely on the new payload:
-      // We upsert all incoming entities and fields by their `stableId`.
+      // Upsert all incoming entities and fields by their stableId.
       // Anything in the DB that is NOT in the incoming payload gets marked as deprecated.
-
       const incomingEntityStableIds = new Set(result.validEntities.map(e => e.id));
-      
+
       // Deprecate entities not in incoming payload
       await tx.entityDefinition.updateMany({
         where: { appId, stableId: { notIn: Array.from(incomingEntityStableIds) }, deprecatedAt: null },
@@ -117,10 +97,10 @@ export class MetadataEngine {
 
       let entitySortOrder = 0;
       for (const entity of result.validEntities) {
-        
-        // Upsert Entity
+
+        // Upsert Entity by scoped compound key [appId, stableId]
         const dbEntity = await tx.entityDefinition.upsert({
-          where: { stableId: entity.id },
+          where: { appId_stableId: { appId, stableId: entity.id } },
           create: {
             appId,
             name: entity.name,
@@ -136,7 +116,7 @@ export class MetadataEngine {
             softDelete: entity.softDelete ?? true,
             timestamps: entity.timestamps ?? true,
             sortOrder: entitySortOrder++,
-            deprecatedAt: null, // restore if it was deprecated
+            deprecatedAt: null, // restore if it was previously deprecated
           }
         });
 
@@ -182,15 +162,30 @@ export class MetadataEngine {
           });
         }
       }
+
+      // 4. Audit Log (inside transaction so it rolls back on failure)
+      if (oldApp && evolutionReport) {
+        await tx.schemaAuditLog.create({
+          data: {
+            appId,
+            userId,
+            fromVersion: (oldApp as any).version || 1,
+            toVersion: nextVersion,
+            impactLevel: evolutionReport.summary.highestSeverity,
+            changeSummary: JSON.stringify({
+              safe: evolutionReport.safeChanges.length,
+              warnings: evolutionReport.warningChanges.length,
+              breaking: evolutionReport.breakingChanges.length,
+            }),
+            migrationPlan: evolutionReport.migrationRequirements.length > 0
+              ? JSON.stringify(evolutionReport.migrationRequirements)
+              : null,
+          }
+        });
+      }
     });
 
-    // 4. Create Audit Log
-    if (oldApp && evolutionReport) {
-      const currentApp = await prisma.appDefinition.findUnique({ where: { id: appId } });
-      await auditService.logChange(appId, userId, oldApp.version || 1, currentApp?.version || 1, evolutionReport);
-    }
-
-    // 5. Cache Invalidation
+    // 5. Cache Invalidation (after transaction commits)
     schemaRegistry.invalidate(appId);
   }
 

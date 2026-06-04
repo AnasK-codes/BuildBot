@@ -35,10 +35,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const resolvedParams = await params;
     const bodyText = await req.text();
     
+    // Support either force=true or forcePublishBreaking=true for convenience
+    const force = req.nextUrl.searchParams.get('force') === 'true' || 
+                  req.nextUrl.searchParams.get('forcePublishBreaking') === 'true';
+    
     const app = await appService.updateAppDefinition(
       authContext.userId, 
       resolvedParams.appId, 
-      bodyText
+      bodyText,
+      force
     );
     
     return successResponse({ app }, 200, { requestId });
