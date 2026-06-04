@@ -10,6 +10,7 @@ import { ValidationRepairLoop, RepairLoopResult } from './repair-loop';
 import { PromptBuilder } from './prompt-builder';
 import { IntentClassifier } from './archetypes/intent-classifier';
 import { ArchetypeAugmentor } from './archetypes/archetype-augmentor';
+import { ArchetypeType } from './archetypes/archetype.types';
 import { createModuleLogger } from '@/lib/logger';
 
 const log = createModuleLogger('ai-service');
@@ -21,7 +22,7 @@ export class AIGenerationService {
   /**
    * Generates a new AppDefinition from scratch based on a prompt.
    */
-  public async generateAppDefinition(prompt: string): Promise<RepairLoopResult> {
+  public async generateAppDefinition(prompt: string): Promise<RepairLoopResult & { archetype: ArchetypeType }> {
     log.info({ prompt }, 'Starting AppDefinition generation');
 
     // Phase B2: Archetype Detection & Augmentation
@@ -34,8 +35,8 @@ export class AIGenerationService {
     const systemPrompt = PromptBuilder.buildSystemPrompt(augmentedContext);
     const userPrompt = `Please generate an application schema for the following request:\n"${prompt}"\nOutput RAW JSON ONLY.`;
     
-    // Execute Loop
-    return this.repairLoop.execute(systemPrompt, userPrompt);
+    const result = await this.repairLoop.execute(systemPrompt, userPrompt);
+    return { ...result, archetype: detection.type };
   }
 }
 

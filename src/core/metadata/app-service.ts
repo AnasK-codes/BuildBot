@@ -29,7 +29,7 @@ export class AppDefinitionService {
       data: {
         userId,
         appName,
-        status: 'draft',
+        status: 'DRAFT',
         rawDefinition: rawJson,
       },
     });

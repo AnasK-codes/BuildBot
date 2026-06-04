@@ -110,7 +110,7 @@ export interface MetadataValidationResult {
 
 // --- Internal Engine Types ---
 
-export type AppStatus = 'ACTIVE' | 'DRAFT' | 'DEPRECATED' | 'INVALID';
+export type AppStatus = 'ACTIVE' | 'DRAFT' | 'DEPRECATED' | 'INVALID' | 'ARCHIVED';
 
 export interface PersistedApp {
   id: string;
