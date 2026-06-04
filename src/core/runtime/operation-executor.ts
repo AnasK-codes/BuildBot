@@ -6,8 +6,10 @@
 // ============================================================
 
 import { RuntimeContext, QueryOptions, RuntimeResponse, RuntimeRecord } from '@/types/runtime.types';
-import { runtimeValidator } from '../validation/stages/runtime-validator';
+import { RuntimeValidator } from '../validation/stages/runtime-validator';
 import { StorageAdapter } from './storage/storage-adapter';
+
+const runtimeValidator = new RuntimeValidator();
 import { prismaStorageAdapter } from './storage/prisma-adapter';
 import { NotFoundError, ValidationError } from '@/core/errors';
 import { CompatibilityLayer } from './compatibility-layer';
@@ -111,13 +113,13 @@ export class OperationExecutor {
     for (const field of context.entity.fields) {
       if (field.type === 'relation' && field.relation && data[field.name]) {
         const targetId = data[field.name] as string;
-        const targetEntitySlug = field.relation.entity.toLowerCase();
+        const targetEntityStableId = field.relation.entityId;
         
         // Find the target record
         // We create a temporary context to fetch the related entity
         const targetContext: RuntimeContext = {
           ...context,
-          entity: { ...context.entity, name: targetEntitySlug } // hacky mock for validation
+          entity: { ...context.entity, id: targetEntityStableId, name: targetEntityStableId } // mock for validation
         };
 
         const targetRecord = await this.storage.findOne(targetContext, targetId);
@@ -125,7 +127,7 @@ export class OperationExecutor {
         if (!targetRecord) {
           throw new ValidationError('Relation validation failed', {
             errors: {
-              [field.name]: `Related record '${targetId}' in entity '${field.relation.entity}' does not exist.`
+              [field.name]: `Related record '${targetId}' in entity '${field.relation.entityId}' does not exist.`
             }
           });
         }
