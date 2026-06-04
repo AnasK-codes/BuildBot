@@ -13,7 +13,7 @@ export const SUPPORTED_FIELD_TYPES: FieldType[] = [
   'integer',
   'boolean',
   'email',
-  | 'url',
+  'url',
   'date',
   'datetime',
   'enum',

@@ -69,10 +69,10 @@ export class RuntimeValidator {
       case 'text':
         if (typeof value !== 'string') return 'Expected a string';
         if (field.validations?.minLength !== undefined && value.length < field.validations.minLength) {
-          return \`Minimum length is \${field.validations.minLength}\`;
+          return `Minimum length is ${field.validations.minLength}`;
         }
         if (field.validations?.maxLength !== undefined && value.length > field.validations.maxLength) {
-          return \`Maximum length is \${field.validations.maxLength}\`;
+          return `Maximum length is ${field.validations.maxLength}`;
         }
         if (field.validations?.pattern && !new RegExp(field.validations.pattern).test(value)) {
           return 'Value does not match required pattern';
@@ -82,20 +82,20 @@ export class RuntimeValidator {
       case 'number':
         if (typeof value !== 'number') return 'Expected a number';
         if (field.validations?.min !== undefined && value < field.validations.min) {
-          return \`Minimum value is \${field.validations.min}\`;
+          return `Minimum value is ${field.validations.min}`;
         }
         if (field.validations?.max !== undefined && value > field.validations.max) {
-          return \`Maximum value is \${field.validations.max}\`;
+          return `Maximum value is ${field.validations.max}`;
         }
         break;
 
       case 'integer':
         if (typeof value !== 'number' || !Number.isInteger(value)) return 'Expected an integer';
         if (field.validations?.min !== undefined && value < field.validations.min) {
-          return \`Minimum value is \${field.validations.min}\`;
+          return `Minimum value is ${field.validations.min}`;
         }
         if (field.validations?.max !== undefined && value > field.validations.max) {
-          return \`Maximum value is \${field.validations.max}\`;
+          return `Maximum value is ${field.validations.max}`;
         }
         break;
 
