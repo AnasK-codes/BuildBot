@@ -1,15 +1,16 @@
 // ============================================================
-// BuildBot — Stage 1: JSON Validator
+// BuildBot — Stage 1: JSON Parse Stage
 // ============================================================
-// Syntactic validity of the raw JSON string.
+// Syntactic validity of the raw JSON string from AI output.
+// Reused from the original JsonValidator — same logic, new types.
 // ============================================================
 
-import { ValidationContext, ValidationStage } from '../types';
+import { CodeValidationContext, CodeValidationStage } from '@/types/project.types';
 
-export class JsonValidator implements ValidationStage {
-  name = 'json_validation';
+export class JsonParseStage implements CodeValidationStage {
+  name = 'json_parse';
 
-  validate(context: ValidationContext): void {
+  validate(context: CodeValidationContext): void {
     if (typeof context.data !== 'string') {
       context.issues.push({
         stage: this.name,
@@ -21,14 +22,11 @@ export class JsonValidator implements ValidationStage {
     }
 
     try {
-      // Parse the JSON. If successful, update the context data
-      // so the next stage operates on the parsed object.
       const parsed = JSON.parse(context.data);
       context.data = parsed;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       
-      // Attempt to extract position from standard JSON parse errors
       let position;
       const match = errorMessage.match(/position (\d+)/);
       if (match && match[1]) {
@@ -42,7 +40,7 @@ export class JsonValidator implements ValidationStage {
         details: position ? { position } : undefined,
       });
       
-      context.haltPipeline = true; // Cannot proceed if JSON is unparseable
+      context.haltPipeline = true;
     }
   }
 }

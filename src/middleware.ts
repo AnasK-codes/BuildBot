@@ -15,8 +15,7 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS_AUTH = 5; // Strict limit for auth routes
 const RATE_LIMIT_MAX_REQUESTS_API = 60; // 1 req/sec average for generic APIs
 
-const MAX_PAYLOAD_APP_DEF = 1 * 1024 * 1024; // 1MB limit for schema definitions
-const MAX_PAYLOAD_RUNTIME = 100 * 1024;      // 100KB limit for runtime records
+const MAX_PAYLOAD_PROJECT = 5 * 1024 * 1024; // 5MB limit for project payloads
 
 export function middleware(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
@@ -27,16 +26,10 @@ export function middleware(req: NextRequest) {
   if (contentLengthHeader && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
     const contentLength = parseInt(contentLengthHeader, 10);
     
-    // Check App Definition Routes
-    if (path === '/api/apps' || path.match(/^\/api\/apps\/[^\/]+$/)) {
-      if (contentLength > MAX_PAYLOAD_APP_DEF) {
-        return buildErrorResponse('Payload Too Large: App definitions are limited to 1MB', 413);
-      }
-    } 
-    // Check Dynamic Runtime Routes
-    else if (path.match(/^\/api\/apps\/[^\/]+\/[^\/]+/)) {
-      if (contentLength > MAX_PAYLOAD_RUNTIME) {
-        return buildErrorResponse('Payload Too Large: Runtime records are limited to 100KB', 413);
+    // Check Project Routes
+    if (path.startsWith('/api/projects')) {
+      if (contentLength > MAX_PAYLOAD_PROJECT) {
+        return buildErrorResponse('Payload Too Large: Project requests are limited to 5MB', 413);
       }
     }
   }

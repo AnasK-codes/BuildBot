@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bot, Sparkles, Layout, Database, CheckCircle, ArrowRight, Server, FileJson } from 'lucide-react';
+import { Bot, Sparkles, Layout, Code2, MonitorPlay, Paintbrush, ArrowRight } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 
 export default function HomePage() {
@@ -19,11 +19,10 @@ export default function HomePage() {
 
   const steps = [
     { name: "Analyzing Prompt", icon: <Bot size={16} /> },
-    { name: "Generating Schema", icon: <Database size={16} /> },
-    { name: "Generating Relationships", icon: <Server size={16} /> },
-    { name: "Creating Draft", icon: <FileJson size={16} /> },
-    { name: "Generating UI", icon: <Layout size={16} /> },
-    { name: "Generating Sample Data", icon: <CheckCircle size={16} /> }
+    { name: "Writing HTML Structure", icon: <Layout size={16} /> },
+    { name: "Styling with CSS", icon: <Paintbrush size={16} /> },
+    { name: "Adding Interactivity (JS)", icon: <Code2 size={16} /> },
+    { name: "Validating Code", icon: <MonitorPlay size={16} /> }
   ];
 
   const generateApp = useMutation({
@@ -38,7 +37,7 @@ export default function HomePage() {
       }, 3000);
 
       try {
-        let res = await fetch('/api/ai/create', {
+        let res = await fetch('/api/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: instruction })
@@ -48,7 +47,7 @@ export default function HomePage() {
         if (res.status === 401 || res.status === 403) {
           const loginRes = await fetch('/api/auth/reviewer', { method: 'POST' });
           if (loginRes.ok) {
-            res = await fetch('/api/ai/create', {
+            res = await fetch('/api/projects', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ prompt: instruction })
@@ -56,7 +55,7 @@ export default function HomePage() {
           }
         }
 
-        if (!res.ok) throw new Error("Failed to generate app");
+        if (!res.ok) throw new Error("Failed to generate project");
         
         clearInterval(interval);
         setGenerationStep(steps.length); // Mark all complete
@@ -72,7 +71,7 @@ export default function HomePage() {
     },
     onSuccess: (data) => {
       setTimeout(() => {
-        router.push(`/apps/${data.appId}`);
+        router.push(`/projects/${data.projectId}`);
       }, 1000);
     }
   });
@@ -80,18 +79,20 @@ export default function HomePage() {
   const handleReviewerLogin = async () => {
     const res = await fetch('/api/auth/reviewer', { method: 'POST' });
     if (res.ok) {
-      router.push('/dashboard');
+      // Refresh to get authenticated state
+      window.location.reload();
     } else {
       showToast('Failed to login as reviewer. Did you run the seed script?', 'error');
     }
   };
 
   const templates = [
-    { title: "CRM", desc: "Customer Relationship Management with deals, pipelines, and contacts.", prompt: "Build a CRM for managing customers, tracking deal pipelines, and storing interaction history." },
-    { title: "Inventory", desc: "Track stock, products, and suppliers in real time.", prompt: "Create an inventory management app with products, SKU, stock levels, and suppliers." },
-    { title: "Project Management", desc: "Kanban boards, tasks, and team tracking.", prompt: "Build a project management tool with tasks, projects, status, and team assignments." },
-    { title: "E-Commerce", desc: "Products, orders, and customer accounts.", prompt: "Create an e-commerce backend tracking products, customer orders, and cart items." },
-    { title: "Booking", desc: "Appointments, schedules, and service management.", prompt: "Design a booking system for scheduling appointments with services and clients." }
+    { title: "Tic Tac Toe", desc: "Classic playable game with win detection.", prompt: "Build a playable Tic Tac Toe game with win detection and a reset button." },
+    { title: "Calculator", desc: "A sleek, functional web calculator.", prompt: "Create a modern, sleek calculator app with standard arithmetic operations." },
+    { title: "Todo App", desc: "Add, complete, and delete tasks.", prompt: "Build a beautiful Todo app where users can add tasks, mark them complete, and delete them." },
+    { title: "Stopwatch", desc: "Start, stop, and record lap times.", prompt: "Create a stopwatch app with start, stop, reset, and lap functionalities." },
+    { title: "Quiz App", desc: "A simple multiple-choice quiz.", prompt: "Design a simple multiple-choice quiz app with 3 sample questions and a final score screen." },
+    { title: "Memory Game", desc: "Card matching memory game.", prompt: "Build a card matching memory game with a grid of 16 cards (8 pairs) and a move counter." }
   ];
 
   return (
@@ -124,10 +125,10 @@ export default function HomePage() {
         {/* Hero */}
         <div className="text-center mb-16">
           <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight mb-4">
-            Build software at the speed of thought.
+            Build web apps at the speed of thought.
           </h1>
           <p className="text-xl text-gray-500 max-w-2xl mx-auto">
-            Describe your ideal application in natural language, and BuildBot will generate the schema, backend, UI, and sample data in seconds.
+            Describe what you want to build, and BuildBot will instantly generate the HTML, CSS, and JavaScript. No frameworks, just pure code.
           </p>
         </div>
 
@@ -138,7 +139,7 @@ export default function HomePage() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               disabled={isGenerating}
-              placeholder="What do you want to build today? (e.g. 'A CRM to track leads and deals')"
+              placeholder="What do you want to build today? (e.g. 'A sleek calculator app')"
               className="w-full bg-gray-50 p-6 pr-32 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-32 text-gray-800 text-lg"
             />
             <div className="absolute bottom-4 right-4">
@@ -174,7 +175,7 @@ export default function HomePage() {
                   return (
                     <div key={idx} className={`flex items-center gap-3 ${isPast ? 'text-green-600' : isCurrent ? 'text-indigo-600 font-medium' : 'text-gray-400'}`}>
                       <div className={`w-6 h-6 flex items-center justify-center rounded-full ${isPast ? 'bg-green-100' : isCurrent ? 'bg-indigo-100 animate-pulse' : 'bg-gray-100'}`}>
-                        {isPast ? <CheckCircle size={14} /> : step.icon}
+                        {isPast ? <MonitorPlay size={14} /> : step.icon}
                       </div>
                       <span className="text-sm">{step.name}</span>
                       {isCurrent && <span className="ml-auto text-xs animate-pulse">In progress...</span>}

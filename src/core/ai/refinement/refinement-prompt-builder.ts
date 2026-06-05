@@ -1,53 +1,60 @@
 // ============================================================
-// BuildBot — Refinement Prompt Builder
+// BuildBot — Refinement Prompt Builder (C1: Website Generator)
 // ============================================================
-// Builds the system + user prompts for AI-driven schema
-// refinement, providing full current-schema context.
+// Builds system + user prompts for AI-driven code refinement,
+// providing full current-files context.
 // ============================================================
-
-import { SUPPORTED_FIELD_TYPES } from '@/core/metadata/field-types';
-import { AppContext } from './context-aggregator';
 
 export class RefinementPromptBuilder {
   /**
-   * Builds the system prompt instructing the AI to MODIFY an existing schema.
+   * Builds the system prompt instructing the AI to MODIFY existing code.
    */
   public static buildSystemPrompt(): string {
-    return `You are a Principal Backend Architect performing schema evolution.
-You will receive the CURRENT AppDefinition JSON and a user instruction requesting a modification.
+    return `You are an expert frontend web developer performing code refinement.
+You will receive the CURRENT files of a web application (HTML, CSS, JS) and a user instruction to modify it.
 
-Your task: generate the COMPLETE UPDATED AppDefinition JSON that incorporates the requested change.
+Your task: generate the COMPLETE UPDATED files that incorporate the requested change.
 
 # Critical Rules:
-1. PRESERVE all existing entity IDs (e.g., ent_customer). Do NOT change them.
-2. PRESERVE all existing field IDs (e.g., fld_email). Do NOT change them.
-3. When ADDING new entities, generate new stable IDs starting with "ent_".
-4. When ADDING new fields, generate new stable IDs starting with "fld_".
-5. When RENAMING, keep the same ID but change the "name" property.
-6. When REMOVING, simply omit the entity or field from the output.
-7. Maintain all existing relationships unless the user explicitly modifies them.
-8. Supported field types: ${SUPPORTED_FIELD_TYPES.join(', ')}.
-9. Relationships must use "relation" type with: { "entityId": "ent_target", "type": "belongsTo" | "hasMany" | "hasOne" }.
-10. Output the ENTIRE AppDefinition, not just the changed parts.
+1. Return ALL files even if only one changed. Do not return partial files.
+2. Preserve existing functionality unless the user explicitly asks to remove it.
+3. Maintain the same file structure: index.html, style.css, script.js.
+4. Keep all CSS in style.css and all JS in script.js (not inline).
+5. index.html must reference style.css via <link> and script.js via <script>.
+6. No external CDN links or libraries.
+7. Make the design visually polished.
 
-# Output: RAW JSON ONLY. No markdown formatting.`;
+# Output Format (STRICT JSON):
+{
+  "title": "Updated title if appropriate",
+  "files": [
+    { "path": "index.html", "content": "..." },
+    { "path": "style.css", "content": "..." },
+    { "path": "script.js", "content": "..." }
+  ]
+}
+
+Output RAW JSON ONLY. No markdown formatting.`;
   }
 
   /**
-   * Builds the user prompt that includes current schema + instruction.
+   * Builds the user prompt that includes current files + instruction.
    */
-  public static buildUserPrompt(context: AppContext, instruction: string): string {
-    return `# Current Application Schema
+  public static buildUserPrompt(
+    currentFiles: Array<{ path: string; content: string }>,
+    instruction: string
+  ): string {
+    const filesContext = currentFiles
+      .map(f => `--- ${f.path} ---\n${f.content}`)
+      .join('\n\n');
 
-${context.entityGraph}
+    return `Here are the current files of the web application:
 
-# Current AppDefinition JSON:
-${JSON.stringify(context.appDefinition, null, 2)}
+${filesContext}
 
-# User Instruction:
-"${instruction}"
+User instruction: "${instruction}"
 
-Generate the COMPLETE UPDATED AppDefinition JSON that incorporates this change.
-Preserve all existing stable IDs. Output RAW JSON ONLY.`;
+Apply the instruction and return the complete updated files as JSON.
+Output RAW JSON ONLY.`;
   }
 }

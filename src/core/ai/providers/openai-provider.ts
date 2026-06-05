@@ -39,19 +39,15 @@ export class OpenAIProvider implements AIProvider {
     }
   }
 
-  public async generateSchema(systemPrompt: string, userPrompt: string): Promise<string> {
+  public async generateCode(systemPrompt: string, userPrompt: string): Promise<string> {
     return this.generateJSON(systemPrompt, userPrompt, 0.2);
   }
 
-  public async refineSchema(systemPrompt: string, userPrompt: string): Promise<string> {
+  public async refineCode(systemPrompt: string, userPrompt: string): Promise<string> {
     return this.generateJSON(systemPrompt, userPrompt, 0.2);
   }
 
-  public async generateRepair(systemPrompt: string, userPrompt: string): Promise<string> {
+  public async repairCode(systemPrompt: string, userPrompt: string): Promise<string> {
     return this.generateJSON(systemPrompt, userPrompt, 0.1);
-  }
-
-  public async generateSeedData(systemPrompt: string, userPrompt: string): Promise<string> {
-    return this.generateJSON(systemPrompt, userPrompt, 0.7); // Higher temp for creative data
   }
 }

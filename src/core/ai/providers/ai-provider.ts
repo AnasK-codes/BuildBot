@@ -1,21 +1,18 @@
 export interface AIProvider {
   /**
-   * Generates a new AppDefinition JSON string from scratch based on prompts.
+   * Generates HTML/CSS/JS code from a user prompt.
+   * Returns raw JSON string containing { title, files: [...] }
    */
-  generateSchema(systemPrompt: string, userPrompt: string): Promise<string>;
+  generateCode(systemPrompt: string, userPrompt: string): Promise<string>;
 
   /**
-   * Refines an existing AppDefinition JSON string based on user instructions.
+   * Refines existing code based on user instruction.
+   * Receives current files + instruction, returns updated files.
    */
-  refineSchema(systemPrompt: string, userPrompt: string): Promise<string>;
+  refineCode(systemPrompt: string, userPrompt: string): Promise<string>;
 
   /**
-   * Attempts to repair an invalid JSON schema using AI.
+   * Repairs code that failed validation.
    */
-  generateRepair(systemPrompt: string, userPrompt: string): Promise<string>;
-
-  /**
-   * Generates sample data records for a given entity schema.
-   */
-  generateSeedData(systemPrompt: string, userPrompt: string): Promise<string>;
+  repairCode(systemPrompt: string, userPrompt: string): Promise<string>;
 }

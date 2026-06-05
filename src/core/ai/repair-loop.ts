@@ -1,38 +1,65 @@
 // ============================================================
-// BuildBot — Validation Repair Loop
+// BuildBot — Code Repair Loop
 // ============================================================
-// Executes the AI generation and automatically retries if the
-// output fails the ValidationEngine.
+// Executes the AI code generation and automatically retries if
+// the output fails the CodeValidator. Adapted from the original
+// ValidationRepairLoop — same control flow, new domain.
 // ============================================================
 
-import { ValidationEngine } from '../validation/validation-engine';
+import { CodeValidator } from '../validation/code-validator';
 import { AIProvider } from './providers/ai-provider';
-import { PromptBuilder } from './prompt-builder';
+import { WebPromptBuilder } from './web-prompt-builder';
 import { sanitizeJsonResponse } from './utils/json-sanitizer';
-import { AppDefinition, ValidationReport } from '@/types/metadata.types';
+import { AIGenerationOutput, CodeValidationReport, GeneratedFileData } from '@/types/project.types';
 import { createModuleLogger } from '@/lib/logger';
+import { createHash } from 'crypto';
 
 const log = createModuleLogger('repair-loop');
 
-export interface RepairLoopResult {
-  json: string;
-  report: ValidationReport;
-  appDefinition: AppDefinition | null;
+export interface CodeRepairResult {
+  parsed: AIGenerationOutput | null;
+  files: GeneratedFileData[];
+  report: CodeValidationReport;
+  success: boolean;
 }
 
-export class ValidationRepairLoop {
-  private validationEngine = new ValidationEngine();
+/**
+ * Maps a file path to its language identifier.
+ */
+function detectLanguage(path: string): string {
+  if (path.endsWith('.html')) return 'html';
+  if (path.endsWith('.css')) return 'css';
+  if (path.endsWith('.js')) return 'javascript';
+  return 'text';
+}
+
+/**
+ * Converts raw AI file output into enriched GeneratedFileData with checksums.
+ */
+function enrichFiles(rawFiles: Array<{ path: string; content: string }>): GeneratedFileData[] {
+  return rawFiles.map(f => ({
+    path: f.path,
+    content: f.content,
+    language: detectLanguage(f.path),
+    sizeBytes: Buffer.byteLength(f.content, 'utf-8'),
+    checksum: createHash('sha256').update(f.content).digest('hex'),
+  }));
+}
+
+export class CodeRepairLoop {
+  private codeValidator = new CodeValidator();
 
   constructor(private provider: AIProvider) {}
 
   /**
    * Executes the AI generation with up to 3 repair attempts.
+   * Structural skeleton reused from the original ValidationRepairLoop.
    */
-  public async execute(systemPrompt: string, userPrompt: string, maxAttempts = 3, isRefinement = false): Promise<RepairLoopResult> {
+  public async execute(systemPrompt: string, userPrompt: string, maxAttempts = 3, isRefinement = false): Promise<CodeRepairResult> {
     let currentAttempt = 1;
     let currentUserPrompt = userPrompt;
     let lastJson = '';
-    let lastReport: ValidationReport | null = null;
+    let lastReport: CodeValidationReport | null = null;
 
     while (currentAttempt <= maxAttempts) {
       log.info(`Generation attempt ${currentAttempt}/${maxAttempts}`);
@@ -40,31 +67,33 @@ export class ValidationRepairLoop {
       let jsonOutput = '';
       if (currentAttempt === 1) {
         if (isRefinement) {
-          jsonOutput = await this.provider.refineSchema(systemPrompt, currentUserPrompt);
+          jsonOutput = await this.provider.refineCode(systemPrompt, currentUserPrompt);
         } else {
-          jsonOutput = await this.provider.generateSchema(systemPrompt, currentUserPrompt);
+          jsonOutput = await this.provider.generateCode(systemPrompt, currentUserPrompt);
         }
       } else {
-        jsonOutput = await this.provider.generateRepair(systemPrompt, currentUserPrompt);
+        jsonOutput = await this.provider.repairCode(systemPrompt, currentUserPrompt);
       }
       lastJson = sanitizeJsonResponse(jsonOutput);
       
-      const validationReport = await this.validationEngine.validateAppDefinition(lastJson);
+      const validationReport = this.codeValidator.validate(lastJson);
       lastReport = validationReport;
 
       if (validationReport.valid) {
         log.info('Validation successful.');
+        const parsed = JSON.parse(lastJson) as AIGenerationOutput;
         return {
-          json: lastJson,
+          parsed,
+          files: enrichFiles(parsed.files),
           report: validationReport,
-          appDefinition: JSON.parse(lastJson) as AppDefinition,
+          success: true,
         };
       }
 
       log.warn({ errors: validationReport.errors }, `Validation failed on attempt ${currentAttempt}`);
 
       if (currentAttempt < maxAttempts) {
-        currentUserPrompt = PromptBuilder.buildRepairPrompt(lastJson, validationReport.errors);
+        currentUserPrompt = WebPromptBuilder.buildRepairPrompt(lastJson, validationReport.errors);
       }
 
       currentAttempt++;
@@ -72,9 +101,10 @@ export class ValidationRepairLoop {
 
     log.error('Max repair attempts reached. Returning invalid result.');
     return {
-      json: lastJson,
+      parsed: null,
+      files: [],
       report: lastReport!,
-      appDefinition: null,
+      success: false,
     };
   }
 }

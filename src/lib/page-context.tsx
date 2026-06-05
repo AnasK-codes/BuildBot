@@ -1,17 +1,11 @@
 "use client";
 
 import React, { createContext, useContext } from 'react';
-import { AppDefinition } from '@/types/metadata.types';
-import { AppUIDefinition, UIPage, UINavigation, UITheme } from '@/types/ui-metadata.types';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 export interface PageContextValue {
-  appId: string;
-  appDefinition: AppDefinition;
-  uiDefinition: AppUIDefinition;
-  pageMetadata?: UIPage;
-  navigation: UINavigation;
-  theme: UITheme;
+  projectId: string;
+  // Will add more workspace context state here later
 }
 
 const Context = createContext<PageContextValue | undefined>(undefined);

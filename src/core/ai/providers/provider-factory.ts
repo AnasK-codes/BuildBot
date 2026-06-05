@@ -39,35 +39,27 @@ class FallbackProviderWrapper implements AIProvider {
     }
   }
 
-  generateSchema(systemPrompt: string, userPrompt: string): Promise<string> {
+  generateCode(systemPrompt: string, userPrompt: string): Promise<string> {
     return this.executeWithFallback(
-      'generateSchema',
-      () => this.primary.generateSchema(systemPrompt, userPrompt),
-      () => this.fallback.generateSchema(systemPrompt, userPrompt)
+      'generateCode',
+      () => this.primary.generateCode(systemPrompt, userPrompt),
+      () => this.fallback.generateCode(systemPrompt, userPrompt)
     );
   }
 
-  refineSchema(systemPrompt: string, userPrompt: string): Promise<string> {
+  refineCode(systemPrompt: string, userPrompt: string): Promise<string> {
     return this.executeWithFallback(
-      'refineSchema',
-      () => this.primary.refineSchema(systemPrompt, userPrompt),
-      () => this.fallback.refineSchema(systemPrompt, userPrompt)
+      'refineCode',
+      () => this.primary.refineCode(systemPrompt, userPrompt),
+      () => this.fallback.refineCode(systemPrompt, userPrompt)
     );
   }
 
-  generateRepair(systemPrompt: string, userPrompt: string): Promise<string> {
+  repairCode(systemPrompt: string, userPrompt: string): Promise<string> {
     return this.executeWithFallback(
-      'generateRepair',
-      () => this.primary.generateRepair(systemPrompt, userPrompt),
-      () => this.fallback.generateRepair(systemPrompt, userPrompt)
-    );
-  }
-
-  generateSeedData(systemPrompt: string, userPrompt: string): Promise<string> {
-    return this.executeWithFallback(
-      'generateSeedData',
-      () => this.primary.generateSeedData(systemPrompt, userPrompt),
-      () => this.fallback.generateSeedData(systemPrompt, userPrompt)
+      'repairCode',
+      () => this.primary.repairCode(systemPrompt, userPrompt),
+      () => this.fallback.repairCode(systemPrompt, userPrompt)
     );
   }
 }

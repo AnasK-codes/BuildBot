@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, Schema } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIProvider } from './ai-provider';
 import { sanitizeJsonResponse } from '../utils/json-sanitizer';
 import { createModuleLogger } from '@/lib/logger';
@@ -40,19 +40,15 @@ export class GeminiProvider implements AIProvider {
     }
   }
 
-  public async generateSchema(systemPrompt: string, userPrompt: string): Promise<string> {
+  public async generateCode(systemPrompt: string, userPrompt: string): Promise<string> {
     return this.generateJSON(systemPrompt, userPrompt, 0.2);
   }
 
-  public async refineSchema(systemPrompt: string, userPrompt: string): Promise<string> {
+  public async refineCode(systemPrompt: string, userPrompt: string): Promise<string> {
     return this.generateJSON(systemPrompt, userPrompt, 0.2);
   }
 
-  public async generateRepair(systemPrompt: string, userPrompt: string): Promise<string> {
+  public async repairCode(systemPrompt: string, userPrompt: string): Promise<string> {
     return this.generateJSON(systemPrompt, userPrompt, 0.1);
-  }
-
-  public async generateSeedData(systemPrompt: string, userPrompt: string): Promise<string> {
-    return this.generateJSON(systemPrompt, userPrompt, 0.7);
   }
 }
