@@ -102,7 +102,17 @@ class SchemaRegistry {
     const app = await this.getAppDefinition(appId);
     if (!app) return null;
 
-    const entity = app.entities.find(e => e.name.toLowerCase() === entitySlug.toLowerCase());
+    const normalizedSlug = entitySlug.toLowerCase();
+    
+    // Attempt exact match first, then handle common pluralizations like 's' or 'es'
+    const entity = app.entities.find(e => {
+      const name = e.name.toLowerCase();
+      return name === normalizedSlug || 
+             name + 's' === normalizedSlug || 
+             name + 'es' === normalizedSlug ||
+             normalizedSlug + 's' === name;
+    });
+    
     return entity || null;
   }
 

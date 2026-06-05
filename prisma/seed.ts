@@ -1,14 +1,10 @@
 import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
+import { getPrisma } from '../src/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { SchemaGenerator } from '../src/core/ai/schema-generator';
-import { ValidationRepairLoop } from '../src/core/ai/repair-loop';
-import { RefinementPromptBuilder } from '../src/core/ai/refinement/refinement-prompt-builder';
 import { draftAppService } from '../src/core/ai/draft-app-service';
 import { dataSeedingService } from '../src/core/ai/data-seeding-service';
-import { PromptBuilder } from '../src/core/ai/prompt-builder';
 
-const prisma = new PrismaClient();
+const prisma = getPrisma();
 
 const crmJson = `
 {

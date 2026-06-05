@@ -22,8 +22,26 @@ export async function POST(req: NextRequest) {
     // Execute business logic
     const data = await refresh(input.refreshToken);
     
-    // Return success response
-    return successResponse(data, 200, { requestId });
+    // Return success response and set cookies
+    const response = successResponse(data, 200, { requestId });
+    
+    response.cookies.set('refreshToken', data.tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 // 7 days
+    });
+    
+    response.cookies.set('accessToken', data.tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 // 7 days
+    });
+
+    return response;
   } catch (error) {
     return handleError(error, requestId);
   }

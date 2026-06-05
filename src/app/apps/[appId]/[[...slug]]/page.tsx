@@ -14,7 +14,7 @@ import DynamicForm from '@/core/ui/renderers/DynamicForm';
 import DetailView from '@/core/ui/renderers/DetailView';
 
 interface PageProps {
-  params: { appId: string; slug?: string[] };
+  params: Promise<{ appId: string; slug?: string[] }>;
 }
 
 function matchPage(pages: UIPage[], slug: string[]): UIPage | undefined {
@@ -36,7 +36,8 @@ function matchPage(pages: UIPage[], slug: string[]): UIPage | undefined {
   return undefined;
 }
 
-export default async function DynamicAppPage({ params }: PageProps) {
+export default async function DynamicAppPage(props: PageProps) {
+  const params = await props.params;
   const { appId, slug = [] } = params;
 
   const appModel = await getPrisma().appDefinition.findUnique({ where: { id: appId } });

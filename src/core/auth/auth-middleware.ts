@@ -19,25 +19,36 @@ import type { AuthContext } from '@/types/auth.types';
  */
 export function authenticate(request: NextRequest): AuthContext {
   const authHeader = request.headers.get('authorization');
+  let token: string | undefined;
 
-  if (!authHeader) {
+  if (authHeader) {
+    const parts = authHeader.split(' ');
+    if (parts.length === 2 && parts[0] === 'Bearer') {
+      token = parts[1];
+    } else {
+      throw new AuthenticationError(
+        'Authorization header must be in the format: Bearer <token>',
+        ErrorCode.AUTHENTICATION_ERROR,
+      );
+    }
+  } else {
+    // Fallback to checking the HTTP-only cookie
+    const cookie = request.cookies.get('accessToken');
+    console.log("=== AUTH DEBUG ===");
+    console.log("Headers:", Object.fromEntries(request.headers.entries()));
+    console.log("Cookies:", request.cookies.getAll());
+    console.log("Token from cookie:", cookie?.value ? "present" : "missing");
+    if (cookie) {
+      token = cookie.value;
+    }
+  }
+
+  if (!token) {
     throw new AuthenticationError(
-      'Authorization header is required',
+      'Authorization header or accessToken cookie is required',
       ErrorCode.AUTHENTICATION_ERROR,
     );
   }
-
-  // Expect "Bearer <token>"
-  const parts = authHeader.split(' ');
-
-  if (parts.length !== 2 || parts[0] !== 'Bearer') {
-    throw new AuthenticationError(
-      'Authorization header must be in the format: Bearer <token>',
-      ErrorCode.AUTHENTICATION_ERROR,
-    );
-  }
-
-  const token = parts[1];
 
   // verifyAccessToken throws AuthenticationError on failure
   const payload = verifyAccessToken(token);
