@@ -99,14 +99,14 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       {/* Header */}
       <header className="px-8 py-6 flex items-center justify-between bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2 text-indigo-600">
+        <div className="flex items-center gap-2 text-black">
           <Bot size={28} />
-          <span className="text-xl font-bold text-gray-900 tracking-tight">BuildBot</span>
+          <span className="text-xl font-bold text-black tracking-tight">BuildBot</span>
         </div>
         <div>
           <button 
             onClick={handleReviewerLogin}
-            className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-medium transition-colors"
+            className="px-4 py-2 bg-white border border-black text-black hover:bg-black hover:text-white rounded-none font-medium transition-colors"
           >
             Reviewer Mode
           </button>
@@ -133,20 +133,20 @@ export default function HomePage() {
         </div>
 
         {/* Prompt Input Area */}
-        <div className="bg-white p-2 rounded-2xl shadow-xl border border-gray-100 mb-16 max-w-3xl mx-auto">
+        <div className="bg-white p-2 rounded-none shadow-sm border border-black mb-16 max-w-3xl mx-auto">
           <div className="relative">
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               disabled={isGenerating}
               placeholder="What do you want to build today? (e.g. 'A sleek calculator app')"
-              className="w-full bg-gray-50 p-6 pr-32 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-32 text-gray-800 text-lg"
+              className="w-full bg-white p-6 pr-32 rounded-none border border-gray-300 focus:outline-none focus:border-black focus:ring-1 focus:ring-black resize-none h-32 text-black text-lg"
             />
             <div className="absolute bottom-4 right-4">
               <button
                 onClick={() => prompt && generateApp.mutate(prompt)}
                 disabled={isGenerating || !prompt}
-                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-all shadow-md"
+                className="bg-black hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-none font-medium flex items-center gap-2 transition-all"
               >
                 {isGenerating ? (
                   <span className="flex items-center gap-2">
@@ -173,8 +173,8 @@ export default function HomePage() {
                   const isCurrent = generationStep === idx;
                   
                   return (
-                    <div key={idx} className={`flex items-center gap-3 ${isPast ? 'text-green-600' : isCurrent ? 'text-indigo-600 font-medium' : 'text-gray-400'}`}>
-                      <div className={`w-6 h-6 flex items-center justify-center rounded-full ${isPast ? 'bg-green-100' : isCurrent ? 'bg-indigo-100 animate-pulse' : 'bg-gray-100'}`}>
+                    <div key={idx} className={`flex items-center gap-3 ${isPast ? 'text-black font-semibold' : isCurrent ? 'text-black font-medium' : 'text-gray-400'}`}>
+                      <div className={`w-6 h-6 flex items-center justify-center rounded-none ${isPast ? 'bg-black text-white' : isCurrent ? 'bg-gray-200 text-black animate-pulse' : 'bg-gray-100 text-gray-400'}`}>
                         {isPast ? <MonitorPlay size={14} /> : step.icon}
                       </div>
                       <span className="text-sm">{step.name}</span>
@@ -197,12 +197,12 @@ export default function HomePage() {
                 <button
                   key={idx}
                   onClick={() => generateApp.mutate(template.prompt)}
-                  className="text-left group bg-white border border-gray-200 p-6 rounded-xl hover:border-indigo-500 hover:shadow-lg transition-all"
+                  className="text-left group bg-white border border-gray-200 p-6 rounded-none hover:border-black hover:shadow-sm transition-all"
                 >
-                  <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-gray-50 border border-gray-200 text-black rounded-none flex items-center justify-center mb-4 group-hover:bg-black group-hover:text-white transition-colors">
                     <Layout size={24} />
                   </div>
-                  <h3 className="font-bold text-gray-900 mb-2">{template.title}</h3>
+                  <h3 className="font-bold text-black mb-2">{template.title}</h3>
                   <p className="text-sm text-gray-500">{template.desc}</p>
                 </button>
               ))}

@@ -80,36 +80,36 @@ export default function ChatPanel({ projectId, currentVersion, onRefined }: Chat
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center gap-2">
-        <Sparkles size={18} className="text-indigo-600" />
-        <h3 className="font-semibold text-gray-800">AI Chat & Refine</h3>
+    <div className="flex flex-col h-full bg-white rounded-none border border-black overflow-hidden">
+      <div className="px-4 py-3 border-b border-black bg-white flex items-center gap-2">
+        <Sparkles size={18} className="text-black" />
+        <h3 className="font-semibold text-black">AI Chat & Refine</h3>
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.role === 'assistant' && (
-              <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-none border border-black bg-white text-black flex items-center justify-center shrink-0">
                 <Bot size={16} />
               </div>
             )}
             
-            <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+            <div className={`max-w-[80%] rounded-none px-4 py-2 text-sm ${
               msg.role === 'user' 
-                ? 'bg-indigo-600 text-white rounded-tr-sm' 
-                : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm shadow-sm'
+                ? 'bg-black text-white' 
+                : 'bg-white border border-black text-black'
             }`}>
               <p className="whitespace-pre-wrap">{msg.content}</p>
               {msg.version && (
-                <div className="mt-2 text-xs font-medium text-indigo-400 bg-indigo-50 inline-block px-2 py-0.5 rounded">
+                <div className="mt-2 text-xs font-bold text-black bg-gray-100 border border-black inline-block px-2 py-0.5 rounded-none">
                   v{msg.version}
                 </div>
               )}
             </div>
             
             {msg.role === 'user' && (
-              <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-none border border-black bg-black text-white flex items-center justify-center shrink-0">
                 <User size={16} />
               </div>
             )}
@@ -118,27 +118,27 @@ export default function ChatPanel({ projectId, currentVersion, onRefined }: Chat
         
         {refineMutation.isPending && (
           <div className="flex gap-3 justify-start">
-            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-none border border-black bg-white text-black flex items-center justify-center shrink-0">
               <Bot size={16} />
             </div>
-            <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2 shadow-sm">
+            <div className="bg-white border border-black rounded-none px-4 py-3 flex items-center gap-2">
               <div className="flex gap-1">
-                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                <div className="w-2 h-2 bg-black rounded-none animate-pulse"></div>
+                <div className="w-2 h-2 bg-black rounded-none animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-black rounded-none animate-pulse" style={{ animationDelay: '0.4s' }}></div>
               </div>
-              <span className="text-xs text-gray-500 font-medium ml-2">Applying changes...</span>
+              <span className="text-xs text-black font-bold ml-2 uppercase">Applying changes...</span>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-3 bg-white border-t border-gray-200">
+      <div className="p-3 bg-white border-t border-black">
         {refineMutation.isError && (
-          <div className="mb-2 px-3 py-2 bg-red-50 text-red-600 text-xs rounded-md flex items-start gap-2">
+          <div className="mb-2 px-3 py-2 bg-white border border-black text-black text-xs flex items-start gap-2">
             <AlertCircle size={14} className="mt-0.5 shrink-0" />
-            <span>Refinement failed. The AI might have produced invalid code. Try rewording your instruction.</span>
+            <span className="font-bold">Error: Refinement failed. Try rewording.</span>
           </div>
         )}
         <form onSubmit={handleSubmit} className="relative">
@@ -147,13 +147,13 @@ export default function ChatPanel({ projectId, currentVersion, onRefined }: Chat
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={refineMutation.isPending}
-            placeholder="E.g. Make the background dark, add a reset button..."
-            className="w-full bg-gray-100 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-lg pl-4 pr-12 py-3 text-sm transition-all"
+            placeholder="E.g. Make the background dark..."
+            className="w-full bg-white border border-black focus:outline-none focus:ring-1 focus:ring-black rounded-none pl-4 pr-12 py-3 text-sm transition-all"
           />
           <button
             type="submit"
             disabled={!input.trim() || refineMutation.isPending}
-            className="absolute right-2 top-1.5 bottom-1.5 p-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-md transition-colors flex items-center justify-center"
+            className="absolute right-2 top-2 bottom-2 p-1.5 bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500 text-white rounded-none transition-colors flex items-center justify-center"
           >
             <Send size={16} />
           </button>

@@ -65,7 +65,7 @@ export default function WorkspacePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <Loader2 size={48} className="text-indigo-600 animate-spin mb-4" />
+        <Loader2 size={48} className="text-black animate-spin mb-4" />
         <p className="text-gray-500 font-medium">Loading workspace...</p>
       </div>
     );
@@ -89,9 +89,9 @@ export default function WorkspacePage() {
   }
 
   return (
-    <div className="h-screen bg-[#f3f4f6] flex flex-col font-sans overflow-hidden">
+    <div className="h-screen bg-white flex flex-col font-sans overflow-hidden">
       {/* Header */}
-      <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+      <header className="h-14 bg-white border-b border-black flex items-center justify-between px-4 shrink-0 z-10">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => router.push('/')}
@@ -100,19 +100,19 @@ export default function WorkspacePage() {
           >
             <ArrowLeft size={20} />
           </button>
-          <div className="flex items-center gap-2 text-indigo-600 border-l border-gray-200 pl-4">
+          <div className="flex items-center gap-2 text-black border-l border-gray-300 pl-4">
             <Bot size={22} />
-            <span className="font-bold text-gray-900 tracking-tight text-lg truncate max-w-[200px]">
+            <span className="font-bold text-black tracking-tight text-lg truncate max-w-[200px]">
               {project.title}
             </span>
           </div>
         </div>
         
-        <div className="flex bg-gray-100 p-1 rounded-lg">
+        <div className="flex bg-gray-100 p-1 rounded-none border border-gray-200">
           <button
             onClick={() => setActiveTab('preview')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-              activeTab === 'preview' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-none text-sm font-medium transition-all ${
+              activeTab === 'preview' ? 'bg-black text-white' : 'text-gray-500 hover:text-black hover:bg-gray-200'
             }`}
           >
             <Play size={16} />
@@ -120,8 +120,8 @@ export default function WorkspacePage() {
           </button>
           <button
             onClick={() => setActiveTab('code')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-              activeTab === 'code' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-none text-sm font-medium transition-all ${
+              activeTab === 'code' ? 'bg-black text-white' : 'text-gray-500 hover:text-black hover:bg-gray-200'
             }`}
           >
             <Code2 size={16} />
@@ -130,7 +130,7 @@ export default function WorkspacePage() {
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="text-xs font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full border border-gray-200">
+          <div className="text-xs font-medium bg-black text-white px-2.5 py-1 rounded-none border border-black">
             v{project.currentVersion}
           </div>
         </div>
