@@ -7,7 +7,7 @@
 
 import { NextRequest } from 'next/server';
 import { authenticate } from '@/core/auth';
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { handleError, NotFoundError } from '@/core/errors';
 import { successResponse, generateRequestId } from '@/utils/response';
 
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const authContext = authenticate(req);
     
     // 2. Load user data
-    const user = await prisma.user.findUnique({
+    const user = await getPrisma().user.findUnique({
       where: { id: authContext.userId },
       select: {
         id: true,

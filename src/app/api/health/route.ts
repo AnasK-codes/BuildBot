@@ -6,13 +6,13 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { env } from '@/config/env';
 
 export async function GET(req: NextRequest) {
   try {
     // Check DB connection
-    await prisma.$queryRaw`SELECT 1`;
+    await getPrisma().$queryRaw`SELECT 1`;
     
     return NextResponse.json(
       {

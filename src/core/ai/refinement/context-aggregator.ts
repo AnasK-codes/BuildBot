@@ -4,7 +4,7 @@
 // Loads the full current state of an app for refinement context.
 // ============================================================
 
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { AppDefinition } from '@/types/metadata.types';
 import { AppUIDefinition } from '@/types/ui-metadata.types';
 import { createModuleLogger } from '@/lib/logger';
@@ -25,7 +25,7 @@ export class ContextAggregator {
    * a structured context object for the refinement AI.
    */
   public static async loadContext(appId: string): Promise<AppContext> {
-    const appModel = await prisma.appDefinition.findUnique({ where: { id: appId } });
+    const appModel = await getPrisma().appDefinition.findUnique({ where: { id: appId } });
 
     if (!appModel) {
       throw new Error(`App not found: ${appId}`);

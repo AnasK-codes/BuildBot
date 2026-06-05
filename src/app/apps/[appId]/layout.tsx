@@ -8,7 +8,7 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import '../../../app/globals.css';
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { AppDefinition } from '@/types/metadata.types';
 import { AppUIDefinition } from '@/types/ui-metadata.types';
 import { PageContextProvider } from '@/lib/page-context';
@@ -27,7 +27,7 @@ export default async function AppShellLayout({
 }) {
   const { appId } = await params;
 
-  const appModel = await prisma.appDefinition.findUnique({ where: { id: appId } });
+  const appModel = await getPrisma().appDefinition.findUnique({ where: { id: appId } });
   if (!appModel?.uiDefinition) return notFound();
 
   const appDefinition = (
@@ -59,9 +59,9 @@ export default async function AppShellLayout({
             <header className="h-14 border-b bg-white flex items-center justify-between px-6 shrink-0 sticky top-0 z-10">
               <div className="font-semibold text-gray-800">{appDefinition.appName}</div>
               <div className="flex items-center gap-2">
-                {appDefinition.status === 'ACTIVE' && <span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">ACTIVE</span>}
-                {appDefinition.status === 'DRAFT' && <span className="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">DRAFT</span>}
-                {appDefinition.status === 'ARCHIVED' && <span className="bg-gray-100 text-gray-800 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">ARCHIVED</span>}
+                {appModel.status === 'ACTIVE' && <span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">ACTIVE</span>}
+                {appModel.status === 'DRAFT' && <span className="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">DRAFT</span>}
+                {appModel.status === 'ARCHIVED' && <span className="bg-gray-100 text-gray-800 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">ARCHIVED</span>}
               </div>
             </header>
             <div className="flex-1 overflow-y-auto">

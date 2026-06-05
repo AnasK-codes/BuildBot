@@ -4,7 +4,7 @@
 // Handles version bumps and draft/publish state transitions.
 // ============================================================
 
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { AppStatus } from '@/types/metadata.types';
 
 export class MetadataVersionManager {
@@ -13,7 +13,7 @@ export class MetadataVersionManager {
    * Increments the major version number.
    */
   public static async publishVersion(appId: string): Promise<number> {
-    const app = await prisma.appDefinition.findUnique({
+    const app = await getPrisma().appDefinition.findUnique({
       where: { id: appId },
       select: { version: true, status: true },
     });
@@ -25,7 +25,7 @@ export class MetadataVersionManager {
     // Only bump version if we're actually publishing a draft or something new
     const nextVersion = app.version + 1;
 
-    await prisma.appDefinition.update({
+    await getPrisma().appDefinition.update({
       where: { id: appId },
       data: {
         status: 'ACTIVE',
@@ -40,7 +40,7 @@ export class MetadataVersionManager {
    * Marks the app as DRAFT.
    */
   public static async markDraft(appId: string): Promise<void> {
-    await prisma.appDefinition.update({
+    await getPrisma().appDefinition.update({
       where: { id: appId },
       data: { status: 'DRAFT' },
     });

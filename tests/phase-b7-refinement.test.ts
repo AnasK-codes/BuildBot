@@ -24,7 +24,7 @@ jest.mock('../src/core/ai/repair-loop', () => ({
 }));
 jest.mock('../src/lib/prisma', () => ({
   __esModule: true,
-  default: {
+  getPrisma: jest.fn().mockReturnValue({
     appDefinition: {
       update: jest.fn().mockResolvedValue({})
     },
@@ -35,7 +35,7 @@ jest.mock('../src/lib/prisma', () => ({
       appDefinition: { update: jest.fn().mockResolvedValue({}) },
       appVersionHistory: { create: jest.fn().mockResolvedValue({}) }
     }))
-  }
+  })
 }));
 jest.mock('../src/core/ai/data-seeding-service', () => ({
   dataSeedingService: {
@@ -129,7 +129,7 @@ describe('Phase B7 - AI Refinement Engine', () => {
       expect(result.newVersion).toBe(2);
       expect(result.evolutionReport.summary.totalChanges).toBeGreaterThan(0);
       
-      const prismaUpdate = require('../src/lib/prisma').default.appDefinition.update;
+      const prismaUpdate = require('../src/lib/prisma').getPrisma().appDefinition.update;
       expect(prismaUpdate).toHaveBeenCalledWith(expect.objectContaining({
         where: { id: "app_1" },
         data: expect.objectContaining({ version: 2 })

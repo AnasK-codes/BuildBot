@@ -5,7 +5,7 @@
 // ownership constraints.
 // ============================================================
 
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { metadataEngine } from './metadata-engine';
 import { NotFoundError, AuthorizationError } from '@/core/errors';
 import { PersistedApp } from '@/types/metadata.types';
@@ -25,7 +25,7 @@ export class AppDefinitionService {
     const appName = result.appDefinition?.appName || 'Untitled App';
 
     // Create the empty shell
-    const app = await prisma.appDefinition.create({
+    const app = await getPrisma().appDefinition.create({
       data: {
         userId,
         appName,
@@ -68,7 +68,7 @@ export class AppDefinitionService {
    * Get an app definition, enforcing ownership.
    */
   public async getAppDefinition(userId: string, appId: string): Promise<PersistedApp> {
-    const app = await prisma.appDefinition.findUnique({
+    const app = await getPrisma().appDefinition.findUnique({
       where: { id: appId },
     });
 
@@ -87,7 +87,7 @@ export class AppDefinitionService {
    * List all app definitions for a user.
    */
   public async listAppDefinitions(userId: string): Promise<PersistedApp[]> {
-    const apps = await prisma.appDefinition.findMany({
+    const apps = await getPrisma().appDefinition.findMany({
       where: { userId },
       orderBy: { updatedAt: 'desc' },
       select: {
@@ -111,7 +111,7 @@ export class AppDefinitionService {
   public async deleteAppDefinition(userId: string, appId: string): Promise<void> {
     await this.assertOwnership(userId, appId);
     
-    await prisma.appDefinition.delete({
+    await getPrisma().appDefinition.delete({
       where: { id: appId },
     });
     
@@ -119,7 +119,7 @@ export class AppDefinitionService {
   }
 
   private async assertOwnership(userId: string, appId: string) {
-    const app = await prisma.appDefinition.findUnique({
+    const app = await getPrisma().appDefinition.findUnique({
       where: { id: appId },
       select: { userId: true },
     });

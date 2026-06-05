@@ -12,7 +12,7 @@ jest.mock('../src/core/runtime/operation-executor');
 
 jest.mock('../src/lib/prisma', () => ({
   __esModule: true,
-  default: {}
+  getPrisma: jest.fn().mockReturnValue({})
 }));
 
 describe('Phase B4 - Sample Data Generation Engine', () => {

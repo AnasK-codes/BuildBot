@@ -6,7 +6,7 @@
 // ============================================================
 
 import { notFound } from 'next/navigation';
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { AppDefinition } from '@/types/metadata.types';
 import { AppUIDefinition, UIPage } from '@/types/ui-metadata.types';
 import PageRenderer from '@/core/ui/renderers/PageRenderer';
@@ -39,7 +39,7 @@ function matchPage(pages: UIPage[], slug: string[]): UIPage | undefined {
 export default async function DynamicAppPage({ params }: PageProps) {
   const { appId, slug = [] } = params;
 
-  const appModel = await prisma.appDefinition.findUnique({ where: { id: appId } });
+  const appModel = await getPrisma().appDefinition.findUnique({ where: { id: appId } });
   if (!appModel?.uiDefinition) return notFound();
 
   const appDefinition = (typeof appModel.rawDefinition === 'string'

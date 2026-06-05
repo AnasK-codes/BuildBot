@@ -8,7 +8,7 @@ import { authenticate } from '@/core/auth';
 import { AppDefinitionService } from '@/core/metadata/app-service';
 import { handleError, NotFoundError, ValidationError } from '@/core/errors';
 import { successResponse, generateRequestId } from '@/utils/response';
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 
 const appService = new AppDefinitionService();
 
@@ -37,7 +37,7 @@ export async function POST(
     }
 
     // Update status to ACTIVE
-    await prisma.appDefinition.update({
+    await getPrisma().appDefinition.update({
       where: {
         id: appId,
         userId: user.userId, // extra safety

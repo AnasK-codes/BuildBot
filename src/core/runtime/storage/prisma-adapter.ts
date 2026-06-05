@@ -5,7 +5,7 @@
 // Handles mapping between the domain models and DB records.
 // ============================================================
 
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { StorageAdapter } from './storage-adapter';
 import { RuntimeContext, RuntimeRecord, QueryOptions } from '@/types/runtime.types';
 import { queryBuilder } from '../query-builder';
@@ -17,7 +17,7 @@ export class PrismaStorageAdapter implements StorageAdapter {
       throw new Error('Cannot create RuntimeRecord: app.id is missing from context');
     }
 
-    const record = await prisma.runtimeRecord.create({
+    const record = await getPrisma().runtimeRecord.create({
       data: {
         appId,
         userId: context.user.userId,
@@ -30,7 +30,7 @@ export class PrismaStorageAdapter implements StorageAdapter {
   }
 
   async findOne(context: RuntimeContext, id: string): Promise<RuntimeRecord | null> {
-    const record = await prisma.runtimeRecord.findFirst({
+    const record = await getPrisma().runtimeRecord.findFirst({
       where: {
         id,
         appId: context.app.id,
@@ -54,7 +54,7 @@ export class PrismaStorageAdapter implements StorageAdapter {
       isDeleted: false,
     };
 
-    const records = await prisma.runtimeRecord.findMany(args);
+    const records = await getPrisma().runtimeRecord.findMany(args);
     return records.map((r: any) => this.mapToRuntimeRecord(r));
   }
 
@@ -68,7 +68,7 @@ export class PrismaStorageAdapter implements StorageAdapter {
       isDeleted: false,
     };
 
-    return prisma.runtimeRecord.count(args);
+    return getPrisma().runtimeRecord.count(args);
   }
 
   async update(context: RuntimeContext, id: string, data: Record<string, unknown>): Promise<RuntimeRecord> {
@@ -81,7 +81,7 @@ export class PrismaStorageAdapter implements StorageAdapter {
     // Merge for PATCH behavior
     const mergedData = { ...existing.data, ...data };
 
-    const record = await prisma.runtimeRecord.update({
+    const record = await getPrisma().runtimeRecord.update({
       where: { id },
       data: { data: mergedData as any },
     });
@@ -96,7 +96,7 @@ export class PrismaStorageAdapter implements StorageAdapter {
     }
 
     // Full replacement for PUT behavior
-    const record = await prisma.runtimeRecord.update({
+    const record = await getPrisma().runtimeRecord.update({
       where: { id },
       data: { data: data as any },
     });
@@ -111,12 +111,12 @@ export class PrismaStorageAdapter implements StorageAdapter {
     }
 
     if (context.entity.softDelete !== false) {
-      await prisma.runtimeRecord.update({
+      await getPrisma().runtimeRecord.update({
         where: { id },
         data: { isDeleted: true },
       });
     } else {
-      await prisma.runtimeRecord.delete({
+      await getPrisma().runtimeRecord.delete({
         where: { id },
       });
     }

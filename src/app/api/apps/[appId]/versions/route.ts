@@ -6,7 +6,7 @@ import { NextRequest } from 'next/server';
 import { authenticate } from '@/core/auth';
 import { handleError } from '@/core/errors';
 import { successResponse, generateRequestId } from '@/utils/response';
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 
 export async function GET(
   req: NextRequest,
@@ -18,7 +18,7 @@ export async function GET(
     authenticate(req);
     const { appId } = await params;
 
-    const app = await prisma.appDefinition.findUnique({
+    const app = await getPrisma().appDefinition.findUnique({
       where: { id: appId },
       select: { 
         id: true, 

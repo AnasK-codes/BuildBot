@@ -17,7 +17,7 @@ import { UIGenerator } from '../../ui/ui-generator';
 import { UIValidator } from '../../ui/ui-validator';
 import { dataSeedingService } from '../data-seeding-service';
 import { IntentClassifier } from '../archetypes/intent-classifier';
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { createModuleLogger } from '@/lib/logger';
 
 const log = createModuleLogger('refinement-generator');
@@ -58,7 +58,7 @@ export class RefinementGenerator {
 
     // 5. Persist as new version
     const newVersion = context.version + 1;
-    await prisma.appDefinition.update({
+    await getPrisma().appDefinition.update({
       where: { id: appId },
       data: {
         rawDefinition: JSON.stringify(refinedDef) as any,
@@ -68,7 +68,7 @@ export class RefinementGenerator {
       }
     });
 
-    await prisma.appVersionHistory.create({
+    await getPrisma().appVersionHistory.create({
       data: {
         appId: appId,
         version: newVersion,

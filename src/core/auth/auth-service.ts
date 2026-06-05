@@ -7,7 +7,7 @@
 // ============================================================
 
 import { createHash } from 'crypto';
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { hashPassword, verifyPassword } from './password-utils';
 import {
   generateAccessToken,
@@ -72,7 +72,7 @@ async function issueTokenPair(user: {
   const expiresAt = new Date(Date.now() + refreshExpiresMs);
 
   // Store the hash (not the raw token) in the database
-  await prisma.refreshToken.create({
+  await getPrisma().refreshToken.create({
     data: {
       userId: user.id,
       tokenHash: hashToken(refreshToken),
@@ -118,7 +118,7 @@ export async function register(
   log.info({ email: input.email }, 'Registering new user');
 
   // Check for existing user
-  const existing = await prisma.user.findUnique({
+  const existing = await getPrisma().user.findUnique({
     where: { email: input.email },
   });
 
@@ -132,7 +132,7 @@ export async function register(
   // Hash password and create user
   const passwordHash = await hashPassword(input.password);
 
-  const user = await prisma.user.create({
+  const user = await getPrisma().user.create({
     data: {
       email: input.email,
       passwordHash,
@@ -158,7 +158,7 @@ export async function login(
   log.info({ email: input.email }, 'Login attempt');
 
   // Find user
-  const user = await prisma.user.findUnique({
+  const user = await getPrisma().user.findUnique({
     where: { email: input.email },
   });
 
@@ -204,7 +204,7 @@ export async function refresh(
   // 2. Check that the hashed token exists in DB and is not revoked
   const tokenHash = hashToken(rawRefreshToken);
 
-  const storedToken = await prisma.refreshToken.findFirst({
+  const storedToken = await getPrisma().refreshToken.findFirst({
     where: {
       tokenHash,
       revoked: false,
@@ -220,13 +220,13 @@ export async function refresh(
   }
 
   // 3. Revoke the old token (rotation: one-time use)
-  await prisma.refreshToken.update({
+  await getPrisma().refreshToken.update({
     where: { id: storedToken.id },
     data: { revoked: true },
   });
 
   // 4. Load user
-  const user = await prisma.user.findUnique({
+  const user = await getPrisma().user.findUnique({
     where: { id: payload.sub },
   });
 

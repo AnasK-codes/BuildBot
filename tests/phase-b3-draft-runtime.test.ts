@@ -19,7 +19,7 @@ jest.mock('../src/core/metadata/app-service');
 
 jest.mock('../src/lib/prisma', () => ({
   __esModule: true,
-  default: {
+  getPrisma: jest.fn().mockReturnValue({
     app: {
       create: jest.fn().mockImplementation((data) => Promise.resolve({ id: 'app_123', ...data.data })),
       findUnique: jest.fn()
@@ -42,7 +42,7 @@ jest.mock('../src/lib/prisma', () => ({
         update: jest.fn().mockImplementation((data) => Promise.resolve({ id: 'app_123', ...data.data }))
       }
     }))
-  }
+  })
 }));
 
 describe('Phase B3 - Draft Lifecycle & Runtime Integration', () => {

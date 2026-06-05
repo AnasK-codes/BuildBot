@@ -4,7 +4,7 @@
 // Tracks schema evolution history for compliance and rollbacks.
 // ============================================================
 
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { SchemaEvolutionReport } from '../evolution/evolution.types';
 
 export class SchemaAuditService {
@@ -15,7 +15,7 @@ export class SchemaAuditService {
     toVersion: number,
     report: SchemaEvolutionReport
   ): Promise<void> {
-    await prisma.schemaAuditLog.create({
+    await getPrisma().schemaAuditLog.create({
       data: {
         appId,
         userId,

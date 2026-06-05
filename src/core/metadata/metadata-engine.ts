@@ -4,7 +4,7 @@
 // Integrates Schema Evolution, Safe Workflow, and Audit Logging.
 // ============================================================
 
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { ValidationEngine } from '../validation/validation-engine';
 import { schemaRegistry } from './schema-registry';
 import { MetadataValidationResult, AppDefinition, AppStatus, EntityDefinition } from '@/types/metadata.types';
@@ -69,7 +69,7 @@ export class MetadataEngine {
     }
 
     // 3. Apply Surgical Updates (inside a single transaction for atomicity)
-    await prisma.$transaction(async (tx: any) => {
+    await getPrisma().$transaction(async (tx: any) => {
       const currentApp = await tx.appDefinition.findUnique({ where: { id: appId } });
       const nextVersion = (currentApp?.version || 1) + 1;
 
@@ -190,7 +190,7 @@ export class MetadataEngine {
   }
 
   private async saveInvalid(appId: string, rawJson: string, result: MetadataValidationResult) {
-    await prisma.appDefinition.update({
+    await getPrisma().appDefinition.update({
       where: { id: appId },
       data: {
         status: 'INVALID',

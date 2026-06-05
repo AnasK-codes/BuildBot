@@ -7,7 +7,7 @@
 // ============================================================
 
 import { AppDefinition, EntityDefinition } from '@/types/metadata.types';
-import prisma from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { createModuleLogger } from '@/lib/logger';
 
 const log = createModuleLogger('schema-registry');
@@ -32,7 +32,7 @@ class SchemaRegistry {
     log.debug({ appId, version }, 'Cache miss or force refresh, loading from DB');
     
     // Load from DB. Find by ID, and if a specific version isn't requested, we just take what's there.
-    const appDef = await prisma.appDefinition.findUnique({
+    const appDef = await getPrisma().appDefinition.findUnique({
       where: { id: appId },
       include: {
         entities: {
