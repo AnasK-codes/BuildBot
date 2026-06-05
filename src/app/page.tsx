@@ -10,6 +10,12 @@ export default function HomePage() {
   const [prompt, setPrompt] = useState("");
   const [generationStep, setGenerationStep] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [toast, setToast] = useState<{message: string, type: 'error' | 'success'} | null>(null);
+
+  const showToast = (message: string, type: 'error' | 'success' = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const steps = [
     { name: "Analyzing Prompt", icon: <Bot size={16} /> },
@@ -27,8 +33,9 @@ export default function HomePage() {
       setGenerationStep(0);
       
       const interval = setInterval(() => {
-        setGenerationStep(prev => Math.min(prev + 1, steps.length - 1));
-      }, 2500);
+        // Cap progression at second-to-last step. Final step only completes when API returns.
+        setGenerationStep(prev => Math.min(prev + 1, steps.length - 2));
+      }, 3000);
 
       try {
         const res = await fetch('/api/ai/create', {
@@ -37,15 +44,17 @@ export default function HomePage() {
           body: JSON.stringify({ instruction })
         });
         
-        clearInterval(interval);
-        setGenerationStep(steps.length);
-        
         if (!res.ok) throw new Error("Failed to generate app");
+        
+        clearInterval(interval);
+        setGenerationStep(steps.length); // Mark all complete
+        
         const json = await res.json();
         return json.data;
       } catch (e) {
         clearInterval(interval);
         setIsGenerating(false);
+        showToast('Generation failed. Please try again.', 'error');
         throw e;
       }
     },
@@ -59,9 +68,9 @@ export default function HomePage() {
   const handleReviewerLogin = async () => {
     const res = await fetch('/api/auth/reviewer', { method: 'POST' });
     if (res.ok) {
-      router.push('/dashboard'); // or wherever apps list is
+      router.push('/dashboard');
     } else {
-      alert('Failed to login as reviewer. Did you run the seed script?');
+      showToast('Failed to login as reviewer. Did you run the seed script?', 'error');
     }
   };
 
@@ -90,6 +99,13 @@ export default function HomePage() {
           </button>
         </div>
       </header>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg font-medium text-white z-50 transition-all ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
+          {toast.message}
+        </div>
+      )}
 
       <main className="flex-1 max-w-5xl w-full mx-auto p-8 pt-16">
         

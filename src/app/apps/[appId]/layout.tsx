@@ -55,8 +55,18 @@ export default async function AppShellLayout({
       <PageContextProvider value={contextValue}>
         <div className="flex h-screen w-full overflow-hidden bg-gray-50 font-sans antialiased">
           <SidebarRenderer uiDef={uiDefinition} appId={appId} />
-          <main className="flex-1 overflow-y-auto relative">
-            {children}
+          <main className="flex-1 overflow-y-auto relative flex flex-col">
+            <header className="h-14 border-b bg-white flex items-center justify-between px-6 shrink-0 sticky top-0 z-10">
+              <div className="font-semibold text-gray-800">{appDefinition.appName}</div>
+              <div className="flex items-center gap-2">
+                {appDefinition.status === 'ACTIVE' && <span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">ACTIVE</span>}
+                {appDefinition.status === 'DRAFT' && <span className="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">DRAFT</span>}
+                {appDefinition.status === 'ARCHIVED' && <span className="bg-gray-100 text-gray-800 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">ARCHIVED</span>}
+              </div>
+            </header>
+            <div className="flex-1 overflow-y-auto">
+              {children}
+            </div>
             <RefinePanel appId={appId} />
           </main>
         </div>
