@@ -39,7 +39,7 @@ export async function GET(
       currentVersion: project.currentVersion,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
-      files: versionData.files.map(f => ({
+      files: versionData.files.map((f: { path: string; content: string; language: string; sizeBytes: number }) => ({
         path: f.path,
         content: f.content,
         language: f.language,

@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       title: genResult.title,
       version: 1,
       status: 'READY',
-      files: genResult.files.map(f => ({
+      files: genResult.files.map((f: { path: string; language: string; sizeBytes: number }) => ({
         path: f.path,
         language: f.language,
         sizeBytes: f.sizeBytes,

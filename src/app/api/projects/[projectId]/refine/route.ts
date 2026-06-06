@@ -45,7 +45,7 @@ export async function POST(
       projectId: refinement.projectId,
       version: refinement.newVersion,
       title: refinement.title,
-      files: refinement.files.map(f => ({
+      files: refinement.files.map((f: { path: string; content: string; language: string; sizeBytes: number }) => ({
         path: f.path,
         content: f.content,
         language: f.language,

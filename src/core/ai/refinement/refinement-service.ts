@@ -45,7 +45,7 @@ export class RefinementService {
       throw new Error(`No files found for project ${projectId}`);
     }
 
-    const currentFiles = currentVersionData.files.map(f => ({
+    const currentFiles = currentVersionData.files.map((f: { path: string; content: string }) => ({
       path: f.path,
       content: f.content,
     }));
