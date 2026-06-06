@@ -6,15 +6,29 @@ import {
   Bot, Sparkles, Layout, Code2, MonitorPlay, Paintbrush, ArrowRight,
   Zap, MessageSquare, Smartphone, Download, History
 } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 
 export default function HomePage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [prompt, setPrompt] = useState("");
   const [generationStep, setGenerationStep] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [showGuestWarning, setShowGuestWarning] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState("");
+
+  const { data: userData, isLoading: isUserLoading } = useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const res = await fetch('/api/me');
+      if (!res.ok) throw new Error('Not logged in');
+      const json = await res.json();
+      return json.data.user;
+    },
+    retry: false
+  });
 
   useEffect(() => {
     setIsMounted(true);
@@ -86,6 +100,20 @@ export default function HomePage() {
     }
   };
 
+  const handleGenerateClick = (instruction: string) => {
+    if (!userData && !isUserLoading) {
+      setPendingPrompt(instruction);
+      setShowGuestWarning(true);
+      return;
+    }
+    generateApp.mutate(instruction);
+  };
+
+  const handleProceedAsGuest = () => {
+    setShowGuestWarning(false);
+    generateApp.mutate(pendingPrompt);
+  };
+
   const templates = [
     { title: "Tic Tac Toe", desc: "Classic playable game with win detection.", prompt: "Build a playable Tic Tac Toe game with win detection and a reset button." },
     { title: "Calculator", desc: "A sleek, functional web calculator.", prompt: "Create a modern, sleek calculator app with standard arithmetic operations." },
@@ -114,13 +142,37 @@ export default function HomePage() {
           <Bot size={28} />
           <span className="text-xl font-bold text-black tracking-tight">BuildBot</span>
         </div>
-        <div>
-          <button 
-            onClick={handleReviewerLogin}
-            className="px-4 py-2 bg-white border-2 border-black text-black hover:bg-black hover:text-white rounded-none font-bold transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-1 hover:translate-x-1"
-          >
-            Reviewer Mode
-          </button>
+        <div className="flex items-center gap-4">
+          {!isUserLoading && userData ? (
+            <>
+              <span className="font-bold hidden md:inline-block text-gray-600">Hi, {userData.name}!</span>
+              <button 
+                onClick={async () => {
+                  await fetch('/api/auth/logout', { method: 'POST' });
+                  queryClient.setQueryData(['me'], null);
+                  toast.success('Logged out');
+                }}
+                className="px-4 py-2 bg-white border-2 border-black text-black hover:bg-gray-100 rounded-none font-bold transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-1 hover:translate-x-1"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => router.push('/login')}
+                className="px-4 py-2 bg-black border-2 border-black text-white hover:bg-gray-800 rounded-none font-bold transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-1 hover:translate-x-1"
+              >
+                Login / Sign Up
+              </button>
+              <button 
+                onClick={handleReviewerLogin}
+                className="px-4 py-2 bg-white border-2 border-black text-black hover:bg-gray-100 rounded-none font-bold transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-1 hover:translate-x-1"
+              >
+                Reviewer Mode
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -150,7 +202,7 @@ export default function HomePage() {
               />
               <div className="absolute bottom-6 right-6">
                 <button
-                  onClick={() => prompt && generateApp.mutate(prompt)}
+                  onClick={() => prompt && handleGenerateClick(prompt)}
                   disabled={isGenerating || !prompt}
                   className="bg-black text-white px-6 py-3 font-bold flex items-center gap-2 hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500 transition-colors border-2 border-transparent"
                 >
@@ -247,7 +299,7 @@ export default function HomePage() {
               {templates.map((template, idx) => (
                 <button
                   key={idx}
-                  onClick={() => generateApp.mutate(template.prompt)}
+                  onClick={() => handleGenerateClick(template.prompt)}
                   disabled={isGenerating}
                   className="text-left group bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white transition-colors disabled:opacity-50 flex flex-col h-full"
                 >
@@ -277,6 +329,40 @@ export default function HomePage() {
           </button>
         </section>
       </main>
+
+      {/* Guest Warning Modal */}
+      {showGuestWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white border-4 border-black p-8 max-w-lg w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <h2 className="text-2xl font-black uppercase tracking-tight mb-4 text-black">Generate as Guest?</h2>
+            <p className="text-gray-700 font-medium mb-8">
+              You are not logged in. If you generate an application now, it will be saved to a public shared Reviewer account. 
+              <br/><br/>
+              Log in to save this project privately to your own account.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button 
+                onClick={() => router.push('/login')}
+                className="flex-1 bg-black text-white px-6 py-3 font-bold uppercase tracking-wider border-2 border-black hover:bg-gray-800 transition-colors"
+              >
+                Login / Sign Up
+              </button>
+              <button 
+                onClick={handleProceedAsGuest}
+                className="flex-1 bg-white text-black px-6 py-3 font-bold uppercase tracking-wider border-2 border-black hover:bg-gray-100 transition-colors"
+              >
+                Continue as Guest
+              </button>
+            </div>
+            <button 
+              onClick={() => setShowGuestWarning(false)}
+              className="mt-6 w-full text-center text-sm font-bold uppercase tracking-wider text-gray-500 hover:text-black underline"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="w-full bg-white border-t-2 border-black py-8 px-6 text-center">
