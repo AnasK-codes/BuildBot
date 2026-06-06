@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Bot, ArrowLeft, Loader2, Code2, Play } from 'lucide-react';
+import { Bot, ArrowLeft, Loader2, Code2, Play, UploadCloud } from 'lucide-react';
 import PreviewPane from '@/components/workspace/PreviewPane';
 import CodeExplorer from '@/components/workspace/CodeExplorer';
 import ChatPanel from '@/components/workspace/ChatPanel';
 import VersionTimeline from '@/components/workspace/VersionTimeline';
+import ExportModal from '@/components/workspace/ExportModal';
 
 interface ProjectData {
   id: string;
@@ -31,6 +32,7 @@ export default function WorkspacePage() {
   const [error, setError] = useState<string | null>(null);
   
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  const [showExportModal, setShowExportModal] = useState(false);
 
   const fetchProject = async () => {
     try {
@@ -108,7 +110,16 @@ export default function WorkspacePage() {
           </div>
         </div>
         
-        <div className="flex bg-gray-100 p-1 rounded-none border border-gray-200">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 border border-black text-xs font-bold hover:bg-black hover:text-white transition-colors"
+          >
+            <UploadCloud size={14} />
+            Export
+          </button>
+          
+          <div className="flex bg-gray-100 p-1 rounded-none border border-gray-200">
           <button
             onClick={() => setActiveTab('preview')}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-none text-sm font-medium transition-all ${
@@ -134,13 +145,14 @@ export default function WorkspacePage() {
             v{project.currentVersion}
           </div>
         </div>
+        </div>
       </header>
 
       {/* Main Workspace */}
-      <main className="flex-1 flex overflow-hidden p-4 gap-4">
+      <main className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 gap-4">
         
         {/* Left Panel: Preview or Code */}
-        <div className="flex-1 min-w-0 flex flex-col h-full">
+        <div className="flex-[3] md:flex-1 min-w-0 flex flex-col h-full min-h-[40vh]">
           {activeTab === 'preview' ? (
             <PreviewPane html={project.previewHtml} />
           ) : (
@@ -149,7 +161,7 @@ export default function WorkspacePage() {
         </div>
 
         {/* Right Panel: Chat & History */}
-        <div className="w-96 shrink-0 flex flex-col gap-4 h-full">
+        <div className="w-full md:w-96 shrink-0 flex flex-col gap-4 h-[50vh] md:h-full">
           {/* Chat (Top 2/3) */}
           <div className="flex-[2] min-h-0">
             <ChatPanel 
@@ -169,6 +181,13 @@ export default function WorkspacePage() {
           </div>
         </div>
       </main>
+
+      {showExportModal && (
+        <ExportModal 
+          projectId={project.id} 
+          onClose={() => setShowExportModal(false)} 
+        />
+      )}
     </div>
   );
 }

@@ -5,17 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Bot, Sparkles, Layout, Code2, MonitorPlay, Paintbrush, ArrowRight } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 
+import { toast } from 'react-hot-toast';
+
 export default function HomePage() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [generationStep, setGenerationStep] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [toast, setToast] = useState<{message: string, type: 'error' | 'success'} | null>(null);
-
-  const showToast = (message: string, type: 'error' | 'success' = 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
 
   const steps = [
     { name: "Analyzing Prompt", icon: <Bot size={16} /> },
@@ -65,11 +61,12 @@ export default function HomePage() {
       } catch (e) {
         clearInterval(interval);
         setIsGenerating(false);
-        showToast('Generation failed. Please try again.', 'error');
+        toast.error('Generation failed. Please try again.');
         throw e;
       }
     },
     onSuccess: (data) => {
+      toast.success('Project generated successfully!');
       setTimeout(() => {
         router.push(`/projects/${data.projectId}`);
       }, 1000);
@@ -82,7 +79,7 @@ export default function HomePage() {
       // Refresh to get authenticated state
       window.location.reload();
     } else {
-      showToast('Failed to login as reviewer. Did you run the seed script?', 'error');
+      toast.error('Failed to login as reviewer. Did you run the seed script?');
     }
   };
 
@@ -112,13 +109,6 @@ export default function HomePage() {
           </button>
         </div>
       </header>
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg font-medium text-white z-50 transition-all ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
-          {toast.message}
-        </div>
-      )}
 
       <main className="flex-1 max-w-5xl w-full mx-auto p-8 pt-16">
         
