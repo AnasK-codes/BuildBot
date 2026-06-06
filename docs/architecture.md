@@ -1,35 +1,38 @@
 # BuildBot Architecture Document
 
 ## Overview
-BuildBot is a multi-tenant, metadata-driven backend runtime. Instead of writing controllers and migrations for every new business entity, BuildBot dynamically executes CRUD operations against generic storage by interpreting JSON configurations.
+BuildBot is an AI-powered code generation platform that writes, renders, and manages raw web applications (HTML, CSS, Vanilla JS). It completely abstracts away the complexity of traditional framework setup, giving users instantaneous, dependency-free web applications that are rendered directly in the browser.
 
-## 1. Metadata Engine
-- **Purpose:** Ingests, validates, and versions JSON application definitions.
-- **Storage:** Relational tables (`AppDefinition`, `EntityDefinition`, `FieldDefinition`).
-- **Validation Pipeline:**
-  1. JSON parsing (Syntax).
-  2. Zod Schema Validation (Structural).
-  3. Business Logic Validation (Relations must point to existing entities, no cyclic dependencies, reserved words).
+## 1. The Generation Pipeline
+The core of BuildBot is its seamless Generation Pipeline:
+1. **Prompt Ingestion:** User describes their desired application in plain text.
+2. **Provider Routing:** The `ProviderFactory` selects the optimal AI provider (OpenAI, Groq, or Gemini) based on environment configuration and active fallback strategies.
+3. **AI Compilation:** The AI generates the application's structure using strict system prompts designed to yield clean, semantic `index.html`, `style.css`, and `script.js` outputs.
+4. **Code Extraction:** The backend parses the AI response, extracting the raw code blocks.
+5. **Snapshot Creation:** The code is saved to PostgreSQL via Prisma as a `ProjectVersion`.
+6. **Workspace Rendering:** The frontend workspace pulls the latest version and renders it securely within a sandboxed `<iframe>`.
 
-## 2. Runtime Execution Pipeline
-- **Dynamic Router:** A single Next.js catch-all route (`/api/apps/[appId]/[entitySlug]/[[...params]]`) handles all data requests.
-- **Context Builder:** Authenticates the user and binds the `appId`, `userId`, and `EntityDefinition` to a localized `RuntimeContext` object.
-- **Runtime Validator:** Dynamically constructs Zod schemas based on the entity's metadata to validate JSON payloads in real-time.
-- **Storage Adapter:** An abstraction layer. Currently implemented via `PrismaStorageAdapter` using PostgreSQL `JSONB`.
+## 2. Iterative Refinement Engine
+BuildBot treats applications as living, conversational artifacts:
+- **Context Injection:** When a user requests a change via the Chat Panel, the backend packages the user's prompt alongside the *current* code snapshot of the application.
+- **Delta Generation:** The AI processes the current state and returns a complete, modified replacement.
+- **Immutable Timelines:** Every refinement results in a new `ProjectVersion`. Old code is never overwritten; it is preserved immutably.
+- **Rollbacks:** Because versions are immutable, users can seamlessly rollback to any previous version in the timeline.
 
-## 3. Schema Evolution Engine
-- **The Problem:** Modifying an App Definition could break existing JSONB records.
-- **The Solution:** 
-  - The `SchemaDiffer` utilizes `stableId` fields (e.g. `ent_customer`) to accurately track renames and mutations.
-  - The `ImpactAnalyzer` classifies changes (SAFE, WARNING, BREAKING).
-  - The `MetadataEngine` refuses breaking changes unless explicitly confirmed. Removed fields are *soft-deleted* (`deprecatedAt`), never hard dropped.
-  - The `CompatibilityLayer` massages old JSONB records at read-time to conform to the new schema.
+## 3. Data Model
+BuildBot uses Prisma to manage its data layer. The primary entities are:
+- **`User`**: The authenticated owner of the projects.
+- **`Project`**: The top-level container for an application, storing the initial prompt and metadata.
+- **`ProjectVersion`**: A 1-to-many relationship with `Project`. Each version contains `html`, `css`, `js`, the `prompt` that triggered the change, and the `version` number.
 
-## 4. Security & Hardening
-- **Middleware Guard:** IP-based sliding window rate limiter prevents abuse.
-- **Payload Limits:** 1MB limit on Schema metadata, 100KB limit on Runtime payload to prevent Node V8 heap overflows.
-- **Multi-tenant Isolation:** `userId` and `appId` are hardcoded into the `PrismaStorageAdapter` queries. Cross-tenant reads are mathematically impossible at the database query level.
+## 4. Frontend Workspace UI
+The Next.js App Router frontend provides a rich, integrated developer experience:
+- **Chat Panel**: A persistent conversational interface tied to the active project.
+- **Preview Pane**: A sandboxed `<iframe>` that injects the raw HTML/CSS/JS dynamically, featuring device emulators for responsive testing.
+- **File Explorer**: A read-only view of the generated `index.html`, `style.css`, and `script.js` files, featuring syntax-highlighted code blocks.
+- **Version Timeline**: A visual history of every prompt and snapshot, providing one-click restoration functionality.
 
-## 5. Performance Tradeoffs
-- **Pros:** Extremely fast scaffolding. Zero database migrations needed to launch new apps. High isolation.
-- **Cons:** Indexing JSONB dynamically is challenging in PostgreSQL. Large tables will require GIN indexes on common fields. The Compatibility Layer adds CPU overhead on large list queries.
+## 5. Security & Isolation
+- **Sandboxed Execution:** Generated JS is executed exclusively within the `PreviewPane` iframe, isolating it from the BuildBot parent window context.
+- **Tenant Isolation:** Prisma queries strictly enforce `userId` checks on all project and version lookups, ensuring mathematical certainty against cross-tenant data leaks.
+- **Rate Limiting:** IP-based sliding window rate limiting prevents abuse of the AI generation endpoints.

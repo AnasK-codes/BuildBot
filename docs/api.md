@@ -1,6 +1,6 @@
 # BuildBot API Documentation
 
-All requests require an `Authorization: Bearer <token>` header except Registration and Login.
+All protected requests require authentication via an `accessToken` cookie or an `Authorization: Bearer <token>` header, except Registration and Login.
 
 ## Authentication
 ### 1. Register User
@@ -22,65 +22,48 @@ All requests require an `Authorization: Bearer <token>` header except Registrati
   "password": "password123"
 }
 ```
-**Response:** Returns `accessToken` (15m) and `refreshToken` (7d).
+
+### 3. Reviewer Login
+`POST /api/auth/reviewer`
+Instantly provisions a session for the default reviewer account (`reviewer@buildbot.local`).
 
 ---
 
-## App Definition APIs (Metadata Engine)
+## Workspace APIs
 
-### 3. Create or Update App Definition
-`POST /api/apps` (or `PUT /api/apps/:appId`)
-
-Generates the metadata schema. Uses stable IDs (`ent_...`, `fld_...`) to track evolution.
-
+### 4. Create Project
+`POST /api/projects`
+Generates a new web application from a prompt using the AI Provider.
 ```json
 {
-  "appName": "CRM",
-  "entities": [
-    {
-      "id": "ent_customer",
-      "name": "Customer",
-      "fields": [
-        {
-          "id": "fld_name",
-          "name": "fullName",
-          "type": "string",
-          "required": true
-        }
-      ]
-    }
-  ]
+  "prompt": "A sleek calculator app"
 }
 ```
-*Note: If passing breaking changes during a `PUT`, you must pass `?forcePublishBreaking=true` in the URL.*
+**Response:** Returns `projectId` and the generated version data.
 
----
+### 5. Fetch Project & Latest Version
+`GET /api/projects/:projectId`
+Returns the project metadata and the most recent `ProjectVersion` (containing `html`, `css`, `js`).
 
-## Dynamic CRUD APIs (Runtime Engine)
-
-Use the dynamic catch-all route to interact with your data.
-
-### 4. Create Record
-`POST /api/apps/:appId/:entitySlug`
+### 6. Refine Project
+`POST /api/projects/:projectId/refine`
+Sends a follow-up prompt to modify the existing codebase. The backend passes the current codebase context to the AI alongside the new instructions.
 ```json
 {
-  "fullName": "Alice Smith"
+  "prompt": "Make the background dark and the text white"
 }
 ```
+**Response:** Returns the newly created `ProjectVersion` snapshot.
 
-### 5. Read Record
-`GET /api/apps/:appId/:entitySlug/:recordId`
+### 7. List Version History
+`GET /api/projects/:projectId/versions`
+Returns an ordered list of all `ProjectVersion` snapshots for the specified project, tracking the prompts that generated each state.
 
-### 6. List Records (Cursor Pagination)
-`GET /api/apps/:appId/:entitySlug?limit=50&cursor=rec_1234`
+### 8. Rollback Version
+`POST /api/projects/:projectId/versions/:version/rollback`
+Restores a previous version by cloning its code and appending it as the newest version in the timeline.
+**Response:** Returns the newly appended `ProjectVersion`.
 
-### 7. Update Record (Partial)
-`PATCH /api/apps/:appId/:entitySlug/:recordId`
-```json
-{
-  "fullName": "Alice Johnson"
-}
-```
-
-### 8. Delete Record (Soft Delete)
-`DELETE /api/apps/:appId/:entitySlug/:recordId`
+### 9. Export Project
+`GET /api/projects/:projectId/export`
+Downloads a `.zip` file containing `index.html`, `style.css`, and `script.js` populated with the raw code from the active version.
