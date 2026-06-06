@@ -67,7 +67,7 @@ export async function POST(
 
     // 4. Create blobs and tree
     const tree = await Promise.all(
-      versionData.files.map(async (f) => {
+      versionData.files.map(async (f: { path: string; content: string }) => {
         const { data: blobData } = await octokit.git.createBlob({
           owner,
           repo: repoName,
